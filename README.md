@@ -6,17 +6,8 @@ this is a development for our project.
 # Installation
 
 ```
-$  git clone https://github.com/ros-simulation/gazebo_ros_demos.git
-$  git clone https://github.com/ros/executive_smach.git
-$  git clone https://github.com/tysik/obstacle_detector.git
-$  git clone https://github.com/ros-drivers/openni_camera.git
-$  git clone https://github.com/ros-perception/openslam_gmapping.git
-$  git clone https://github.com/karaage0703/pcl_ros_processing.git
-$  git clone https://github.com/ros-perception/slam_gmapping.git
-$  git clone https://github.com/parambeernegi/robot_arm_ros.git
-$  git clone --recursive https://github.com/leggedrobotics/darknet_ros.git
-$  git clone https://github.com/ros-planning/navigation.git
-$  git clone https://github.com/ros-planning/navigation_msgs.git
+$ chmod +x install.sh
+$ ./install.sh
 ```
 
 # Note

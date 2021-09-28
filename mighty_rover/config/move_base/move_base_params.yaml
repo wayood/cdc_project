@@ -1,0 +1,5 @@
+planner_frequency : 10 #20 #10
+#recovery_behaviors: [{name: conservative_reset, type: clear_costmap_recovery/ClearCostmapRecovery}, {name: rotate_recovery, type: rotate_recovery/RotateRecovery}, {name: aggressive_reset, type: clear_costmap_recovery/ClearCostmapRecovery}] 
+recovery_behavior_enabled : false
+max_planning_retries : -1
+conservative_reset_dist : 1.0

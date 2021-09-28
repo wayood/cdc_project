@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="ros_beginner" name="service_server" type="service_server.py"/>
+  <node pkg="ros_beginner" name="service_client" type="service_client.py" output="screen"/>
+</launch>

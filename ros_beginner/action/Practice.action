@@ -1,0 +1,10 @@
+geometry_msgs/Twist target_vel
+int32 timeout_sec    #goal.~
+---
+bool bumper_hit      #result.~
+---
+geometry_msgs/Twist current_vel    #feedback
+#int32 sample
+#float32 data
+#float32 mean
+#float32 std_dev

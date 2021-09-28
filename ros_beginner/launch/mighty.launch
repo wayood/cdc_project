@@ -1,0 +1,40 @@
+<launch>
+    <node pkg="kyolo" name="kyolo_topic" type="kyolo_topic.py" /> <!--output="screen"-->
+    <node pkg="img_recog" name="color_img_recog03" type="color_img_recog03.py" /><!--output="screen"-->
+    <node pkg="ros_beginner" name="A_srv03" type="A_srv03.py" /> <!--output="screen"-->    <!--kyolo_client2-->
+    <node pkg="ros_beginner" name="Practice_server033" type="Practice_server033.py" /> <!--output="screen"-->  <!--Practice client2-->
+    <!--node pkg="depth_estimater" name="test_bottle" type="test_bottle.py" /-->
+    <!--node pkg="ros_beginner" name="AAA_test" type="AAA_test.py" /> <output="screen"-->
+    <!--node pkg="smach_viewer" name="smach_viewer" type="smach_viewer.py" /> <output="screen"-->
+
+    <!-- obstacle detector -->
+    <rosparam command="load" file="$(find laser_lecture)/config/obstacle_detector.yaml" />
+    <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
+        <remap from="scan" to="/scan" />
+    </node>
+    <node name="obstacle_tracker" pkg="obstacle_detector" type="obstacle_tracker_node" />
+
+
+    <!-- Console launch prefix -->
+    <arg name="launch_prefix" default=""/>
+    <arg name="image" default="/camera/image_raw" />
+
+    <!-- Config and weights folder. -->
+    <arg name="yolo_weights_path"          default="$(find darknet_ros)/yolo_network_config/weights"/>
+    <arg name="yolo_config_path"           default="$(find darknet_ros)/yolo_network_config/cfg"/>
+
+    <!-- ROS and network parameter files -->
+    <arg name="ros_param_file"             default="$(find darknet_ros)/config/ros.yaml"/>
+    <arg name="network_param_file"         default="$(find darknet_ros)/config/yolov2-tiny.yaml"/>
+
+    <!-- Load parameters -->
+    <rosparam command="load" ns="darknet_ros" file="$(arg ros_param_file)"/>
+    <rosparam command="load" ns="darknet_ros" file="$(arg network_param_file)"/>
+
+    <!-- Start darknet and ros wrapper -->
+    <node pkg="darknet_ros" type="darknet_ros" name="darknet_ros" output="screen" launch-prefix="$(arg launch_prefix)">
+        <param name="weights_path"          value="$(arg yolo_weights_path)" />
+        <param name="config_path"           value="$(arg yolo_config_path)" />
+        <remap from="camera/image_raw"  to="$(arg image)" />
+    </node>
+</launch>

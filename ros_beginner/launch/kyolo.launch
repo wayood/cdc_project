@@ -1,0 +1,31 @@
+<launch>
+    <node pkg="kyolo" name="kyolo_topic" type="kyolo_topic.py" /> <!--output="screen"-->
+    <node pkg="img_recog" name="color_img_recog" type="color_img_recog.py" /><!--output="screen"-->
+    <node pkg="ros_beginner" name="A_srv" type="A_srv.py" /> <!--output="screen"-->
+    <node pkg="ros_beginner" name="Practice_server02" type="Practice_server02.py" /> <!--output="screen"-->
+    <node pkg="ros_beginner" name="AA_test" type="AA_test.py" /> <!--output="screen"-->
+    <node pkg="smach_viewer" name="smach_viewer" type="smach_viewer.py" /> <!--output="screen"-->
+
+    <!-- Console launch prefix -->
+    <arg name="launch_prefix" default=""/>
+    <arg name="image" default="/camera/image_raw" />
+
+    <!-- Config and weights folder. -->
+    <arg name="yolo_weights_path"          default="$(find darknet_ros)/yolo_network_config/weights"/>
+    <arg name="yolo_config_path"           default="$(find darknet_ros)/yolo_network_config/cfg"/>
+
+    <!-- ROS and network parameter files -->
+    <arg name="ros_param_file"             default="$(find darknet_ros)/config/ros.yaml"/>
+    <arg name="network_param_file"         default="$(find darknet_ros)/config/yolov2-tiny.yaml"/>
+
+    <!-- Load parameters -->
+    <rosparam command="load" ns="darknet_ros" file="$(arg ros_param_file)"/>
+    <rosparam command="load" ns="darknet_ros" file="$(arg network_param_file)"/>
+
+    <!-- Start darknet and ros wrapper -->
+    <node pkg="darknet_ros" type="darknet_ros" name="darknet_ros" output="screen" launch-prefix="$(arg launch_prefix)">
+        <param name="weights_path"          value="$(arg yolo_weights_path)" />
+        <param name="config_path"           value="$(arg yolo_config_path)" />
+        <remap from="camera/image_raw"  to="$(arg image)" />
+    </node>
+</launch>

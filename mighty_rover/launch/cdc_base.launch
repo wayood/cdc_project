@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+<arg name="model" default="$(find mighty_rover)/xacro/mighty.xacro"/>
+<arg name="rvizconfig" default="$(find mighty_rover)/rviz/up04.rviz"/>
+<!-- <arg name="rvizconfig" default="$(find urdf_tutorial)/rviz/urdf.rviz"/> -->
+
+
+<arg name="robot_name" default="mighty1"/>
+<arg name="enable_odom_tf" default="false"/>
+<arg name="init_pose" default=""/>
+
+<!--<group ns="$(arg model)">-->
+
+
+<!-- Launch gazebo -->
+<include file="$(find mighty_rover)/launch/gazebo.launch">
+  <arg name="model" value="$(arg model)"/>
+</include>
+
+<!-- rviz-->
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
+
+<!-- feture object detection -->
+<node name="find_object_3d" pkg="find_object_2d" type="find_object_2d" output="screen">
+ <rosparam file="$(find mighty_rover)/config/find_object_2d.yaml" command="load"/>
+ <remap from="rgb/image_rect_color" to="camera/rgb/image_raw"/>
+ <remap from="depth_registered/camera_info" to="camera/depth/camera_info"/>
+ <remap from="depth_registered/image_raw" to="camera/depth/image_raw"/>
+</node>
+<!-- <node name="tf_broadcast" pkg="mighty_rover" type="tf_broadcast"/>
+<node name="tf_listen" pkg="mighty_rover" type="tf_listen"/> -->
+
+<!--動的障害物についてs-->
+<!-- <node pkg="mighty_rover" type="move_obs.py" name="move_obs" output="screen"/> -->
+<!-- <node pkg="mighty_rover" type="move_obs_0.py" name="move_obs_0" output="screen"/> -->
+<!--<node pkg="mighty_rover" type="move_obs_1.py" name="move_obs_1" output="screen"/>-->
+<!-- <node pkg="mighty_rover" type="move_obs_2.py" name="move_obs_2" output="screen"/> -->
+<!-- <node pkg="mighty_rover" type="move_obs_3.py" name="move_obs_3" output="screen"/> -->
+<!-- <node pkg="mighty_rover" type="move_obs_4.py" name="move_obs_4" output="screen"/> -->
+<!-- <node pkg="mighty_rover" type="move_obs_5.py" name="move_obs_5" output="screen"/> -->
+<!-- <node pkg="mighty_rover" type="move_obs_6.py" name="move_obs_6" output="screen"/> -->
+<!-- <node pkg="mighty_rover" type="move_obs_7.py" name="move_obs_7" output="screen"/> -->
+<!-- <node pkg="mighty_rover" type="move_obs_8.py" name="move_obs_8" output="screen"/>  -->
+
+<!-- Load joint controller configuration from YAML file to parameter server -->
+
+<rosparam file="$(find mighty_rover)/config/joint_states.yaml" command="load"/>
+
+<rosparam file="$(find mighty_rover)/config/diff_drive.yaml" command="load"/>
+
+
+
+<!-- load the controllers -->
+<param name="diff_drive_controller/enable_odom_tf" value="$(arg enable_odom_tf)" />
+    <param name="diff_drive_controller/base_frame_id" value="base_link" />
+    <param name="diff_drive_controller/odom_frame_id" value="odom" />
+<!--<param name="/$(arg model)/diff_drive_controller/imu_frame_id" value="$(arg model)/imu_link" />-->
+
+<node name="robot_arm_controller_spawner" pkg="controller_manager" type="spawner" respawn="true" output="screen" 
+   args="joint_state_controller
+         diff_drive_controller"/>
+
+<!-- convert joint states to TF transforms for rviz, etc -->
+<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
+
+<!--<param name="tf_prefix" value="$(arg robot_name)"/>-->
+
+</node>
+ <!--</group>-->
+
+
+<!-- steering -->
+<node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
+  <param name="default_topic" value="diff_drive_controller/cmd_vel"/> 
+</node>
+
+<!--<group ns="Diff_Drive">-->
+    <!-- to increase the wheel odometry error -->
+    <param name="diff_drive_controller/wheel_radius" value="0.055" />
+    <!-- robot localization -->
+
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" output="screen">
+      <rosparam command="load" file="$(find mighty_rover)/config/ekf_localization/mode1.yaml" />
+      <!--<param name="tf_prefix" value="mighty1"/>-->
+      <remap from="/odometry/filtered" to="odom" />
+      <remap from="odom0" to="diff_drive_controller/odom" />
+      <remap from="imu0"  to="imu/data" />
+    </node> 
+
+
+
+    <!-- amcl -->
+    <node pkg="map_server" name="map_server" type="map_server" args="$(find mighty_rover)/map/cdc_base.yaml"/>
+    <node pkg="amcl" type="amcl" name="amcl" clear_params="true">
+      <rosparam command="load" file="$(find mighty_rover)/config/amcl.yaml" />
+      <param name="base_frame_id" value="base_link" />
+      <param name="odom_frame_id" value="odom" />
+      <param name="global_frame_id" value="map" />
+      <remap from="scan" to="scan" />
+    </node>
+
+    <!-- <node pkg="teb_local_planner" type="teb_local_planner" respawn="false" name="teb_local_planner" output="screen">
+           <remap from="odom" to="/odom"/>
+           <remap from="obstacles" to= -->
+    <!-- move_base -->
+    <node pkg="astar" type="astar" name="astar" output="screen" respawn="false">
+        <param name="Euclidean" value="true"/>
+        <param name="OccupyThresh" value="-1"/>
+        <param name="InflateRadius" value="0.25"/>
+        <param name="rate" value="10"/>
+    </node>
+
+     
+
+<!-- ゴール指定 -->
+
+<!-- <node name="goal_pick" pkg="mighty_rover" type="goal_point"/> -->
+
+
+ <!--</group>-->
+<arg name="paused" default="false"/>
+<arg name="use_sim_time" default="true"/>
+<arg name="gui" default="true"/>
+<arg name="headless" default="false"/>
+<arg name="debug" default="false"/>
+
+
+</launch>

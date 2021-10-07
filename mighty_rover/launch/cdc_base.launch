@@ -125,7 +125,7 @@
         <param name="USE_SCAN_AS_INPUT" value="$(arg use_scan_as_input)"/>
         <remap from="/local_map" to="map"/>
         <remap from="/scan" to="scan"/>
-        <remap from="/local_goal" to="goal"/>
+        <remap from="/local_goal" to="move_base_simple/goal"/>
         <remap from="/cmd_vel" to="diff_drive_controller/cmd_vel"/>
         <remap from="/odom" to="diff_drive_controller/odom"/>
     </node>

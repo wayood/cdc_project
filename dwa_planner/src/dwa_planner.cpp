@@ -80,6 +80,7 @@ void DWAPlanner::local_goal_callback(const geometry_msgs::PoseStampedConstPtr& m
     try{
         listener.transformPose(ROBOT_FRAME, ros::Time(0), local_goal, local_goal.header.frame_id, local_goal);
         local_goal_subscribed = true;
+        ROS_INFO("sucess goal");
     }catch(tf::TransformException ex){
         ROS_ERROR("%s", ex.what());
     }
@@ -89,24 +90,28 @@ void DWAPlanner::scan_callback(const sensor_msgs::LaserScanConstPtr& msg)
 {
     scan = *msg;
     scan_updated = true;
+    ROS_INFO("sucess scan");
 }
 
 void DWAPlanner::local_map_callback(const nav_msgs::OccupancyGridConstPtr& msg)
 {
     local_map = *msg;
     local_map_updated = true;
+    ROS_INFO("sucess map");
 }
 
 void DWAPlanner::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 {
     current_velocity = msg->twist.twist;
     odom_updated = true;
+    ROS_INFO("sucess odom");
 }
 
 void DWAPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr& msg)
 {
     TARGET_VELOCITY = msg->linear.x;
     ROS_INFO_STREAM("target velocity was updated to " << TARGET_VELOCITY << "[m/s]");
+    ROS_INFO("sucess velocity");
 }
 
 std::vector<DWAPlanner::State> DWAPlanner::dwa_planning(
@@ -209,7 +214,7 @@ void DWAPlanner::process(void)
             odom_updated = false;
         }else{
             if(!local_goal_subscribed){
-                ROS_WARN_THROTTLE(1.0, "Local goal has not been updated");
+                ROS_WARN_THROTTLE(1.0, "Local goal has not been a updated");
             }
             if(!odom_updated){
                 ROS_WARN_THROTTLE(1.0, "Odom has not been updated");

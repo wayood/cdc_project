@@ -18,7 +18,7 @@
 <!--<arg name="world_name" value="$(find mighty_rover)/worlds/test_1.world"/>-->
 <!-- <arg name="world_name" value="$(find mighty_rover)/worlds/first_up01.world"/> -->
 <!-- <arg name="world_name" value="$(find mighty_rover)/worlds/many_obs01.world"/>  -->
-<arg name="world_name" value="$(find mighty_rover)/worlds/cdc_up03.world"/>
+<arg name="world_name" value="$(find mighty_rover)/worlds/cdc_up04.world"/>
 
 <!--<arg name="world_name" value="$(find mighty_rover)/worlds/clearpath_playpen.world"/>-->
 <arg name="debug" value="false" />

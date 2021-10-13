@@ -114,7 +114,7 @@
 
     <!--local plan-->
     <arg name="hz" default="2"/>
-    <arg name="use_scan_as_input" default="true"/>
+    <arg name="use_scan_as_input" default="false"/>
     <arg name="robot_param" default="$(find mighty_rover)/config/robot_param.yaml"/>
     <arg name="dwa_param" default="$(find mighty_rover)/config/dwa_param.yaml"/> 
     
@@ -123,8 +123,9 @@
         <rosparam command="load" file="$(arg dwa_param)"/>
         <param name="HZ" value="$(arg hz)"/>
         <param name="USE_SCAN_AS_INPUT" value="$(arg use_scan_as_input)"/>
-        <!-- <remap from="/local_map" to="mask"/> -->
-        <remap from="/scan" to="scan"/>
+        <remap from="/local_map" to="mask"/>
+         <remap from="/scan" to="scan"/> 
+        <remap from="/path" to="/nav_path"/>
         <remap from="/local_goal" to="move_base_simple/goal"/>
         <remap from="/cmd_vel" to="diff_drive_controller/cmd_vel"/>
         <remap from="/odom" to="diff_drive_controller/odom"/>

@@ -22,12 +22,12 @@
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
 
 <!-- feture object detection -->
-<node name="find_object_3d" pkg="find_object_2d" type="find_object_2d" output="screen">
+<!-- <node name="find_object_3d" pkg="find_object_2d" type="find_object_2d" output="screen">
  <rosparam file="$(find mighty_rover)/config/find_object_2d.yaml" command="load"/>
  <remap from="rgb/image_rect_color" to="camera/rgb/image_raw"/>
  <remap from="depth_registered/camera_info" to="camera/depth/camera_info"/>
  <remap from="depth_registered/image_raw" to="camera/depth/image_raw"/>
-</node>
+</node> -->
 <!-- <node name="tf_broadcast" pkg="mighty_rover" type="tf_broadcast"/>
 <node name="tf_listen" pkg="mighty_rover" type="tf_listen"/> -->
 

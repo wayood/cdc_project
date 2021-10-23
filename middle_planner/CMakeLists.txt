@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(mighty_rover)
+project(middle_planner)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,21 +8,16 @@ project(mighty_rover)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  base_local_planner
-  costmap_2d
-  navfn
+  geometry_msgs
   roscpp
   rospy
   std_msgs
   tf
-  smach
-  smach_ros
-
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
+find_package(Eigen3 REQUIRED COMPONENTS system)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -77,7 +72,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs
+#   geometry_msgs#   std_msgs
 # )
 
 ################################################
@@ -110,9 +105,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS src
-#  LIBRARIES mighty_rover
-#  CATKIN_DEPENDS base_local_planner costmap_2d navfn roscpp rospy std_msgs tf
+  INCLUDE_DIRS include
+#  LIBRARIES middle_planner
+#  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs tf
 #  DEPENDS system_lib
 )
 
@@ -123,14 +118,19 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-#  include
+  include
   ${catkin_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
+add_executable(middle_plan src/middle_plan.cpp)
+target_link_libraries(middle_plan
+  ${catkin_LIBRARIES}
+)
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/mighty_rover.cpp
-# )
+#  src/${PROJECT_NAME}/middle_plan.cpp
+#)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -140,11 +140,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(goal_point src/goal_point.cpp)
-target_link_libraries(goal_point ${catkin_LIBRARIES})
-
-add_executable(goal_sub src/goal_sub.cpp)
-target_link_libraries(goal_sub ${catkin_LIBRARIES})
+# add_executable(${PROJECT_NAME}_node src/middle_planner_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -208,7 +204,7 @@ target_link_libraries(goal_sub ${catkin_LIBRARIES})
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_mighty_rover.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_middle_planner.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

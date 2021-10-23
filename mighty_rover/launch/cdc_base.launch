@@ -21,13 +21,7 @@
 <!-- rviz-->
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
 
-<!-- feture object detection -->
-<node name="find_object_3d" pkg="find_object_2d" type="find_object_2d" output="screen">
- <rosparam file="$(find mighty_rover)/config/find_object_2d.yaml" command="load"/>
- <remap from="rgb/image_rect_color" to="camera/rgb/image_raw"/>
- <remap from="depth_registered/camera_info" to="camera/depth/camera_info"/>
- <remap from="depth_registered/image_raw" to="camera/depth/image_raw"/>
-</node>
+
 <!-- <node name="tf_broadcast" pkg="mighty_rover" type="tf_broadcast"/>
 <node name="tf_listen" pkg="mighty_rover" type="tf_listen"/> -->
 
@@ -90,8 +84,9 @@
 
 
 
-    <!-- amcl -->
-    <node pkg="map_server" name="map_server" type="map_server" args="$(find mighty_rover)/map/cdc_base.yaml"/>
+    <!--map-->
+    <node pkg="map_server" name="map_server" type="map_server" args="$(find mighty_rover)/map/road.yaml"/>
+     <!-- amcl -->
     <node pkg="amcl" type="amcl" name="amcl" clear_params="true">
       <rosparam command="load" file="$(find mighty_rover)/config/amcl.yaml" />
       <param name="base_frame_id" value="base_link" />
@@ -100,10 +95,14 @@
       <remap from="scan" to="scan" />
     </node>
 
-    <!-- <node pkg="teb_local_planner" type="teb_local_planner" respawn="false" name="teb_local_planner" output="screen">
-           <remap from="odom" to="/odom"/>
-           <remap from="obstacles" to= -->
-    <!-- move_base -->
+<!-- feture object detection -->
+    <node name="find_object_3d" pkg="find_object_2d" type="find_object_2d" output="screen">
+     <rosparam file="$(find mighty_rover)/config/find_object_2d.yaml" command="load"/>
+     <remap from="rgb/image_rect_color" to="camera/rgb/image_raw"/>
+     <remap from="depth_registered/camera_info" to="camera/depth/camera_info"/>
+     <remap from="depth_registered/image_raw" to="camera/depth/image_raw"/>
+    </node>
+
     <!-- global plan-->
     <node pkg="astar" type="astar" name="astar" output="screen" respawn="false">
         <param name="Euclidean" value="true"/>

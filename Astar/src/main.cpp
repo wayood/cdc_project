@@ -167,7 +167,6 @@ int main(int argc, char * argv[])
                 {
                     Point2d dst_point;
                     OccGridParam.Image2MapTransform(PathList[i], dst_point);
-
                     geometry_msgs::PoseStamped pose_stamped;
                     pose_stamped.header.stamp = ros::Time::now();
                     pose_stamped.header.frame_id = "map";

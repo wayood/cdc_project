@@ -4,11 +4,13 @@ import rospy
 from std_msgs.msg import Header
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Path
+from std_msgs.msg import Float32MultiArray
 
 def main():
         rospy.init_node('midleplan_cdc', anonymous=True)
         rospy.Subscriber("/move_base_simple/goal", PoseStamped)
-        rospy.Subscriber('/move_base/NavfnROS/plan',Path,callback_con)
+        rospy.Subscriber('/nav_path',Path,callback_con)
+        lm=rospy.Subscriber('/objects',Float32MultiArray,callback_lm)
         rospy.spin()
 
 def callback_con(msg):
@@ -21,14 +23,16 @@ def callback_con(msg):
         path_header.frame_id = "map"
         path = Path()
         path.header = path_header
-        pose=cdc_path(msg.poses)
-        path_pub = rospy.Publisher("/move_base/NavfnROS/plan", Path, queue_size=10)
-        path.poses=pose
+        pose = cdc_path(msg.poses)
+        path_pub = rospy.Publisher("/middle_path", Path, queue_size=10)
+        path.poses = pose
         print(path)
         path_pub.publish(path)
         r.sleep()    
 
-        
+def callback_lm(msg):
+        lm = msg
+        return lm        
   
 def cdc_path(pose):
         poses = []

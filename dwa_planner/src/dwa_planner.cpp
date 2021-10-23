@@ -295,7 +295,6 @@ float DWAPlanner::calc_path_cost(const std::vector<State>& traj, const nav_msgs:
     float cost = 0.0;
     for(int i = 0; i < sizeof(path); i++){
         min_cost[i]=sqrt((path.poses[i].pose.position.x - last_position[0,0])*(path.poses[i].pose.position.x - last_position[0,0])+ (path.poses[i].pose.position.y - last_position[0,1])*(path.poses[i].pose.position.y - last_position[0,1]));
-        // sqrt((path.poses[i].pose.position.x - last_position[0,0])*(path.poses[i].pose.position.x - last_position[0,0]) + (path.poses[i].pose.position.y - last_position[0,1])*(path.poses[i].pose.position.y - last_position[0,1]));
         if(min_cost[i] < min_cost[i-1] && i>0){
             cost = min_cost[i];
         }

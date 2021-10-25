@@ -23,25 +23,28 @@ class CDCPlanner
 public:
     CDCPlanner(void);
     void process(void);
-    void prepare(Eigen::MatrixXf&);
     void path_callback(const nav_msgs::Path&);
     void lm_x_callback(const std_msgs::Float32MultiArray::ConstPtr&);
     void lm_y_callback(const std_msgs::Float32MultiArray::ConstPtr&);
-    // Eigen::MatrixXf a_mat(Eigen::MatrixXf&,Eigen::MatrixXf&);
-    // Eigen::MatrixXf CDC_plan(const nav_msgs::Path&);
-    // void CDC_publish(const nav_msgs::Path&,Eigen::MatrixXf&);
+    void prepare(Eigen::MatrixXf&);
+    Eigen::MatrixXf a_mat(Eigen::MatrixXf&,Eigen::MatrixXf&);
+    Eigen::MatrixXf CDC_plan(const nav_msgs::Path&,Eigen::MatrixXf&);
+    void CDC_publish(const nav_msgs::Path&,Eigen::MatrixXf&);
 protected:
     ros::NodeHandle nh;
     ros::Subscriber path_sub;
     ros::Subscriber lm_x_sub;
     ros::Subscriber lm_y_sub;
+    ros::Publisher path_pub;
     int num;
     float lm_y[1000];
     float lm_x[1000];
     nav_msgs::Path path;
-    // Eigen::MatrixXf A;
-    // nav_msgs::Path middle_path;
-    // geometry_msgs::PoseStamped middle_pose;
+    nav_msgs::Path middle_path;
+    geometry_msgs::PoseStamped middle_pose;
+    bool path_subscribed;
+    bool lm_x_subscribed;
+    bool lm_y_subscribed;
 };
 
 #endif

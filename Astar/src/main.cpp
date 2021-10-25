@@ -186,7 +186,7 @@ int main(int argc, char * argv[])
             }
 
             // Set flag
-            start_flag = false;
+            // start_flag = false;
         }
 
         if(map_flag)

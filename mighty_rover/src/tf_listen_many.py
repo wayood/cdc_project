@@ -26,7 +26,7 @@ def Main():
         
         # /map に対する /object_ の Transform を取得
         try:
-            t = tfBuffer.lookup_transform('object_53', 'map', rospy.Time())
+            t = tfBuffer.lookup_transform('object_133', 'map', rospy.Time())
             #t = tfBuffer.lookup_transform('mug', 'base_link', rospy.Time())
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException) as e:
             print(e)
@@ -36,11 +36,12 @@ def Main():
         if not t:
             continue
         else:
-            # for i in range(5):
-            x.data[0] = t.transform.translation.x
-            y.data[0] = t.transform.translation.y
-            print(x)
-            print(y)
+
+            for i in range(5):
+                x.data[i] = t.transform.translation.x
+                y.data[i] = t.transform.translation.y
+                print(x)
+                print(y)
             pub_x.publish(x)
             pub_y.publish(y)
             

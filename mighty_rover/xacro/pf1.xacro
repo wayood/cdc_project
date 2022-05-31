@@ -1,0 +1,1354 @@
+<?xml version="1.0"?>
+<robot name="pf1" xmlns:xacro="http://ros.org/wiki/xacro">
+
+    <!-- define color-->
+  <material name="base_link">
+    <color rgba="0.95 0.95 1.0 1.0"/>
+  </material>
+  <material name="lidar">
+    <color rgba="0.0 0.0 0.0 1.0"/>
+  </material>
+  <material name="camera_aluminum">
+    <color rgba="0.5 0.5 0.5 1.0"/>
+  </material>
+  <material name="frame">
+    <color rgba="0.5 0.5 0.5 1.0"/>
+  </material>
+  <material name="gear">
+    <color rgba="0.0 0.4 1.0 1.0"/>
+  </material>
+  <material name="motor">
+    <color rgba="0.3 0.3 0.3 1.0"/>
+  </material>
+  <material name="wheel">
+    <color rgba="0.15 0.15 0.15 1.0"/>
+  </material>
+
+
+
+    <!-- base_footprint-->
+  <!-- <link name="base_footprint"/>
+  <gazebo reference="body_footprint"/>
+
+  <joint name="base_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0.0 0.0 0.47" rpy="0 0 0"/>
+  </joint> -->
+
+
+
+    <!-- base_link -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="10.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <box size="0.45 0.39 0.2"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="base_link"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.45 0.39 0.2"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="base_link"/>
+    </collision>
+  </link>
+  <gazebo reference="body_link">
+    <material>Gazebo/White</material>
+  </gazebo>
+
+
+    <!-- imu_link -->
+  <joint name="imu_link_to_base_link" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="-0 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="imu_link">
+    <visual>
+      <origin xyz="0 0 0.0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.01" radius="0.005"/>
+      </geometry>
+      <material name="lidar"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.01" radius="0.005"/>
+      </geometry>
+      <material name="lidar"/>
+    </collision>
+  </link>
+  <gazebo reference="imu_link">
+    <material>Gazebo/Blue</material>
+    <gravity>true</gravity>
+    <sensor name="imu_sensor" type="imu">
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <visualize>true</visualize>
+      <topic>data</topic>
+      <plugin filename="libgazebo_ros_imu_sensor.so" name="imu_plugin">
+        <topicName>imu/data</topicName>
+        <bodyName>imu_link</bodyName>
+        <updateRateHZ>10.0</updateRateHZ>
+        <gaussianNoise>0.0</gaussianNoise>
+        <xyzOffset>0 0 0</xyzOffset>
+        <rpyOffset>0 0 0</rpyOffset>
+        <frameName>imu_link</frameName>
+      </plugin>
+      <pose>0 0 0 0 0 0</pose>
+    </sensor>
+  </gazebo>
+
+
+    <!-- base_sensor -->
+  <joint name="base_link_to_base_sensor" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_sensor"/>
+    <origin xyz="-0 0 0" rpy="0 0 0"/>
+  </joint>
+  <link name="base_sensor">
+    <visual>
+      <origin xyz="0 0 0.0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.01" radius="0.005"/>
+      </geometry>
+      <material name="lidar"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder length="0.01" radius="0.005"/>
+      </geometry>
+      <material name="lidar"/>
+    </collision>
+  </link>
+  <gazebo reference="base_link_to_base_sensor">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+    <!-- realsense -->
+
+  <!-- set property -->
+   <xacro:property name="M_PI" value="3.1415926535897931" />
+   <xacro:property name="d435_cam_width" value="0.090"/>
+   <xacro:property name="d435_cam_height" value="0.025"/>
+   <xacro:property name="d435_cam_depth" value="0.02505"/>
+   <xacro:property name="d435_cam_mount_from_center_offset" value="0.0149"/>
+   <xacro:property name="d435_cam_depth_px" value="${d435_cam_mount_from_center_offset}"/>
+   <xacro:property name="d435_cam_depth_py" value="0.0175"/>
+   <xacro:property name="d435_cam_depth_pz" value="${d435_cam_height/2}"/>
+   <xacro:property name="deg_to_rad" value="0.01745329251994329577" />
+
+  <!-- camera body, with origin at bottom screw mount -->
+
+    <joint name="camera_joint" type="fixed">
+      <origin xyz="0.225 0 0" rpy="0 0 0" />
+      <parent link="base_sensor" />
+      <child link="camera_bottom_screw_frame" />
+    </joint>
+
+    <link name="camera_bottom_screw_frame"/>
+
+    <joint name="camera_link_joint" type="fixed">
+      <origin xyz="0.0125 0 0" rpy="0 0 0"/>
+      <!--<origin xyz="0.08 ${d435_cam_depth_py} 0.055" rpy="0 0 0"/>-->
+      <parent link="camera_bottom_screw_frame"/>
+      <child link="camera_link" />
+    </joint>
+
+    <link name="camera_link">
+      <visual>
+        <origin xyz="0 ${-d435_cam_depth_py} 0" rpy="${M_PI/2} 0 ${M_PI/2}"/>
+        <geometry>
+          <box size="${d435_cam_width} ${d435_cam_height} ${d435_cam_depth}" />
+          <!--<mesh filename="package://shogo/meshes/d435.dae" />-->
+        </geometry>
+        <material name="camera_aluminum"/>
+      </visual>
+      <collision>
+        <origin xyz="0 ${-d435_cam_depth_py} 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${d435_cam_depth} ${d435_cam_width} ${d435_cam_height}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.564" />
+        <origin xyz="0 0 0" />
+        <inertia ixx="0.003881243" ixy="0.0" ixz="0.0" iyy="0.000498940" iyz="0.0" izz="0.003879257" />
+      </inertial>
+    </link>
+    <gazebo reference="camera_link">
+      <material>Gazebo/Black</material>
+      <self_collide>0</self_collide>
+      <enable_wind>0</enable_wind>
+      <kinematic>0</kinematic>
+      <gravity>1</gravity>
+      <!--<mu>1</mu>-->
+      <mu2>1</mu2>
+      <fdir1>0 0 0</fdir1>
+      <!--<slip1>0</slip1>
+      <slip2>0</slip2>-->
+      <kp>1e+13</kp>
+      <kd>1</kd>
+      <!--<max_vel>0.01</max_vel>
+      <min_depth>0</min_depth>-->
+      <sensor name="cameracolor" type="camera">
+        <camera name="camera">
+          <horizontal_fov>${69.4*deg_to_rad}</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>RGB_INT8</format>
+          </image>
+          <clip>
+            <near>0.1</near>
+            <far>100</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>30</update_rate>
+        <visualize>1</visualize>
+      </sensor>
+
+      <sensor name="cameraired1" type="camera">
+        <camera name="camera">
+          <horizontal_fov>${85.2*deg_to_rad}</horizontal_fov>
+          <image>
+            <width>1280</width>
+            <height>720</height>
+            <format>L_INT8</format>
+          </image>
+          <clip>
+            <near>0.1</near>
+            <far>100</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.05</stddev>
+          </noise>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>90</update_rate>
+        <visualize>0</visualize>
+      </sensor>
+
+      <sensor name="cameraired2" type="camera">
+        <camera name="camera">
+          <horizontal_fov>${85.2*deg_to_rad}</horizontal_fov>
+          <image>
+            <width>1280</width>
+            <height>720</height>
+            <format>L_INT8</format>
+          </image>
+          <clip>
+            <near>0.1</near>
+            <far>100</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.05</stddev>
+          </noise>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>90</update_rate>
+        <visualize>0</visualize>
+      </sensor>
+
+      <sensor name="cameradepth" type="depth">
+        <camera name="camera">
+          <horizontal_fov>${85.2*deg_to_rad}</horizontal_fov>
+          <image>
+            <width>1280</width>
+            <height>720</height>
+          </image>
+          <clip>
+            <near>0.1</near>
+            <far>100</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.100</stddev>
+          </noise>
+        </camera>
+        <always_on>1</always_on>
+        <update_rate>90</update_rate>
+        <visualize>0</visualize>
+      </sensor>
+    </gazebo>
+      <gazebo>
+      <plugin name="camera" filename="librealsense_gazebo_plugin.so">
+        <prefix>camera</prefix>
+        <depthUpdateRate>30.0</depthUpdateRate>
+        <colorUpdateRate>30.0</colorUpdateRate>
+        <infraredUpdateRate>30.0</infraredUpdateRate>
+        <depthTopicName>depth/image_raw</depthTopicName>
+        <depthCameraInfoTopicName>depth/camera_info</depthCameraInfoTopicName>
+        <colorTopicName>color/image_raw</colorTopicName>
+        <colorCameraInfoTopicName>color/camera_info</colorCameraInfoTopicName>
+        <infrared1TopicName>infra1/image_raw</infrared1TopicName>
+        <infrared1CameraInfoTopicName>infra1/camera_info</infrared1CameraInfoTopicName>
+        <infrared2TopicName>infra2/image_raw</infrared2TopicName>
+        <infrared2CameraInfoTopicName>infra2/camera_info</infrared2CameraInfoTopicName>
+        <colorOpticalframeName>color_optical_frame</colorOpticalframeName>
+        <depthOpticalframeName>depth_optical_frame</depthOpticalframeName>
+        <infrared1OpticalframeName>infrared1_optical_frame</infrared1OpticalframeName>
+        <infrared2OpticalframeName>infrared2_optical_frame</infrared2OpticalframeName>
+        <rangeMinDepth>0.2</rangeMinDepth>
+        <rangeMaxDepth>10.0</rangeMaxDepth>
+        <pointCloud>true</pointCloud>
+        <pointCloudTopicName>depth/color/points</pointCloudTopicName>
+        <pointCloudCutoff>0.25</pointCloudCutoff>
+        <pointCloudCutoffMax>9.0</pointCloudCutoffMax>
+      </plugin>
+    </gazebo>
+
+   
+    <!-- camera depth joints and links -->
+    <joint name="camera_depth_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <parent link="camera_link"/>
+      <child link="camera_depth_frame" />
+    </joint>
+
+    <link name="camera_depth_frame"/>
+
+    <joint name="camera_depth_optical_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
+      <parent link="camera_depth_frame" />
+      <child link="camera_depth_optical_frame" />
+    </joint>
+
+    <link name="camera_depth_optical_frame"/>
+      
+    <!-- camera left IR joints and links -->
+    <joint name="camera_left_ir_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <parent link="camera_depth_frame" />
+      <child link="camera_left_ir_frame" />
+    </joint>
+
+    <link name="camera_left_ir_frame"/>
+
+    <joint name="camera_left_ir_optical_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
+      <parent link="camera_left_ir_frame" />
+      <child link="camera_left_ir_optical_frame" />
+    </joint>
+
+    <link name="camera_left_ir_optical_frame"/>
+
+    <!-- camera right IR joints and links -->
+    <joint name="camera_right_ir_joint" type="fixed">
+      <origin xyz="0 -0.050 0" rpy="0 0 0" />
+      <parent link="camera_depth_frame" />
+      <child link="camera_right_ir_frame" />
+    </joint>
+
+    <link name="camera_right_ir_frame"/>
+
+    <joint name="camera_right_ir_optical_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
+      <parent link="camera_right_ir_frame" />
+      <child link="camera_right_ir_optical_frame" />
+    </joint>
+
+    <link name="camera_right_ir_optical_frame"/>
+
+    <!-- camera color joints and links -->
+    <joint name="camera_color_joint" type="fixed">
+      <origin xyz="0 0.015 0" rpy="0 0 0" />
+      <parent link="camera_depth_frame" />
+      <child link="camera_color_frame" />
+    </joint>
+
+    <link name="camera_color_frame"/>
+
+    <joint name="camera_color_optical_joint" type="fixed">
+      <origin xyz="0 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
+      <parent link="camera_color_frame" />
+      <child link="camera_color_optical_frame" />
+    </joint>
+
+    <link name="camera_color_optical_frame"/>
+
+    <!--end of realsense setup-->
+
+
+
+
+
+     <link name="hokuyo_sensor">
+   <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://rrbot_description/meshes/hokuyo.dae"/>
+      </geometry>
+    </visual>
+
+    <inertial>
+      <mass value="1e-5" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+    </link>
+
+    <joint name="hokuyo_joint" type="fixed">
+      <parent link="base_link"/>
+      <child  link="hokuyo_sensor"/>
+      <origin xyz="0.02 0 0.13" rpy="0 0 0"/>
+    </joint>
+
+
+    <gazebo reference="hokuyo_sensor">
+      <sensor type="gpu_ray" name="base_link_hokuyo_sensor">
+        <pose>0 0 0 0 0 0</pose>
+       
+        <visualize>false</visualize>
+        <update_rate>40</update_rate>
+        <ray>
+          <scan>
+          <horizontal>
+                <samples>400</samples>
+                <resolution>1</resolution>
+               
+                <min_angle>${radians(-180)}</min_angle>
+                <max_angle>${radians( 180)}</max_angle>
+
+
+              
+          </horizontal>
+          
+          </scan>
+          <range>
+            <min>0.10</min>
+            <max>30.0</max>
+            <resolution>0.01</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            
+            <stddev>0.01</stddev>
+          </noise>
+        </ray>
+        <plugin name="gazebo_ros_lidar_controller" filename="libgazebo_ros_gpu_laser.so">
+          <topicName>scan</topicName>
+          <frameName>hokuyo_sensor</frameName>
+        </plugin>
+      </sensor>
+    </gazebo>
+
+    
+
+    <!-- leg_fl -->
+  <joint name="frame1_fl_to_base_link" type="fixed">
+    <parent link="base_link"/>
+    <child  link="frame1_fl"/>
+    <origin xyz="0 0.14 -0.1" rpy="0 0 0"/>
+  </joint>
+  <link name="frame1_fl">
+    <visual>
+      <geometry>
+        <box size="0.27 0.02 0.09"/>
+      </geometry>
+      <origin xyz="0.135 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.27 0.02 0.09"/>
+      </geometry>
+      <origin xyz="0.135 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+  </link>
+  <gazebo reference="frame1_fl">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="frame2_fl_to_frame1_fl" type="fixed">
+    <parent link="frame1_fl"/>
+    <child  link="frame2_fl"/>
+    <origin xyz="0.23 0.02 -0.045" rpy="0 0 0"/>
+  </joint>
+  <link name="frame2_fl">
+    <visual>
+      <geometry>
+        <box size="0.08 0.02 0.05"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.08 0.02 0.05"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+  </link>
+  <gazebo reference="frame2_fl">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="gear_fl_to_frame2_fl" type="fixed">
+    <parent link="frame2_fl"/>
+    <child  link="gear_fl"/>
+    <origin xyz="0 0.035 -0.06" rpy="0 0 0"/>
+  </joint>
+  <link name="gear_fl">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.07"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="gear"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.07"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="gear"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="gear_fl">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+
+  <joint name="frame3_fl_to_gear_fl" type="revolute">
+    <parent link="gear_fl"/>
+    <child  link="frame3_fl"/>
+    <axis xyz="0 0 1"/>
+    <origin xyz="0 0.02 -0.08" rpy="0 0 0"/>
+    <limit lower="-3.1415" upper="3.1415" effort="30" velocity="10"/>
+    <dybamics damping="10000.0" friction="10000.0" />
+  </joint>
+  <transmission name="frame3_fl_to_gear_fl_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="frame3_fl_to_gear_fl">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="frame3_fl_to_gear_fl_motor">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanismReduction>1</mechanismReduction>
+    </actuator>
+  </transmission>
+
+  <!-- <gazebo reference="frame3_fl_to_gear_fl">
+    <material>Gazebo/Blue</material>
+  </gazebo> -->
+  <!--<joint name="frame3_fl_to_gear_fl" type="fixed">
+    <parent link="gear_fl"/>
+    <child  link="frame3_fl"/>
+    <origin xyz="0 0.0 -0.08" rpy="0 0 0"/>
+  </joint>-->
+
+  <link name="frame3_fl">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="frame3_fl">
+    <material>Gazebo/Grey</material>
+    <mu1 value="2500" />
+    <mu2 value="2500" />
+  </gazebo>
+
+  <joint name="motor_fl_to_frame3_fl" type="fixed">
+    <parent link="frame3_fl"/>
+    <child  link="motor_fl"/>
+    <origin xyz="0 -0.02 -0.09" rpy="0 0 0"/>
+  </joint>
+  <link name="motor_fl">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <material name="motor"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <material name="motor"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="motor_fl">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="wheel_fl_to_motor_fl" type="continuous">
+    <parent link="motor_fl"/>
+    <child  link="wheel_fl"/>
+    <origin xyz="0 0.09 0" rpy="0 0 0"/>
+    <!-- <origin xyz="0 0.15 0" rpy="0 0 0"/> -->
+    <axis xyz="0 1 0"/>
+    <limit effort="100" velocity="100"/>
+    <dynamics damping="0.1" friction="0.0"/> 
+  </joint>
+  <transmission name="wheel_fl_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wheel_fl_to_motor_fl">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wheel_fl_motor">
+      <!-- <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanismReduction>1</mechanismReduction>
+    </actuator>
+  </transmission>
+
+  <link name="wheel_fl">
+    <visual>
+      <geometry>
+        <cylinder length="0.09" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <material name="wheel"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.09" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <material name="wheel"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="wheel_fl">
+    <material>Gazebo/Black</material>
+    <mu1 value="200.0" />
+    <mu2 value="100.0" />
+    <kp value="10000000.0" />
+    <kd value="1.0" />
+  </gazebo>
+
+
+
+      <!-- leg_bl : mirror leg_fl to the y axis -->
+  <joint name="frame1_bl_to_base_link" type="fixed">
+    <parent link="base_link"/>
+    <child  link="frame1_bl"/>
+    <origin xyz="0 0.14 -0.1" rpy="0 0 0"/>
+  </joint>
+  <link name="frame1_bl">
+    <visual>
+      <geometry>
+        <box size="0.27 0.02 0.09"/>
+      </geometry>
+      <origin xyz="-0.135 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.27 0.02 0.09"/>
+      </geometry>
+      <origin xyz="-0.135 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+  </link>
+  <gazebo reference="frame1_bl">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="frame2_bl_to_frame1_bl" type="fixed">
+    <parent link="frame1_bl"/>
+    <child  link="frame2_bl"/>
+    <origin xyz="-0.23 0.02 -0.045" rpy="0 0 0"/>
+  </joint>
+  <link name="frame2_bl">
+    <visual>
+      <geometry>
+        <box size="0.08 0.02 0.05"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.08 0.02 0.05"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+  </link>
+  <gazebo reference="frame2_bl">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="gear_bl_to_frame2_bl" type="fixed">
+    <parent link="frame2_bl"/>
+    <child  link="gear_bl"/>
+    <origin xyz="0 0.035 -0.06" rpy="0 0 0"/>
+  </joint>
+  <link name="gear_bl">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.07"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="gear"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.07"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="gear"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="gear_bl">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+
+  <joint name="frame3_bl_to_gear_bl" type="revolute">
+    <parent link="gear_bl"/>
+    <child  link="frame3_bl"/>
+    <axis xyz="0 0 1"/>
+    <origin xyz="0 0.02 -0.08" rpy="0 0 0"/>
+    <limit lower="-3.1415" upper="3.1415" effort="30" velocity="10"/>
+    <dybamics damping="10000.0" friction="10000.0" />
+  </joint>
+  <transmission name="frame3_bl_to_gear_bl_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="frame3_bl_to_gear_bl">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="frame3_bl_to_gear_bl_motor">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanismReduction>1</mechanismReduction>
+    </actuator>
+  </transmission>
+  <!--<joint name="frame3_bl_to_gear_bl" type="fixed">
+    <parent link="gear_bl"/>
+    <child  link="frame3_bl"/>
+    <origin xyz="0 0.0 -0.08" rpy="0 0 0"/>
+  </joint>-->
+
+  <link name="frame3_bl">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="frame3_bl">
+    <material>Gazebo/Grey</material>
+    <mu1 value="2500" />
+    <mu2 value="2500" />
+  </gazebo>
+
+  <joint name="motor_bl_to_frame3_bl" type="fixed">
+    <parent link="frame3_bl"/>
+    <child  link="motor_bl"/>
+    <origin xyz="0 -0.02 -0.09" rpy="0 0 0"/>
+  </joint>
+  <link name="motor_bl">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <material name="motor"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <material name="motor"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="motor_bl">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="wheel_bl_to_motor_bl" type="continuous">
+    <parent link="motor_bl"/>
+    <child  link="wheel_bl"/>
+    <origin xyz="0 0.09 0" rpy="0 0 0"/>
+    <!-- <origin xyz="0 0.15 0" rpy="0 0 0"/> -->
+    <axis xyz="0 1 0"/>
+    <limit effort="100" velocity="100"/>
+    <dynamics damping="0.1" friction="0.0"/> 
+  </joint>
+  <transmission name="wheel_bl_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wheel_bl_to_motor_bl">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wheel_bl_motor">
+      <!-- <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanismReduction>1</mechanismReduction>
+    </actuator>
+  </transmission>
+
+  <link name="wheel_bl">
+    <visual>
+      <geometry>
+        <cylinder length="0.09" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <material name="wheel"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.09" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <material name="wheel"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="wheel_bl">
+    <material>Gazebo/Black</material>
+    <mu1 value="200.0" />
+    <mu2 value="100.0" />
+    <kp value="10000000.0" />
+    <kd value="1.0" />
+  </gazebo>
+
+
+
+    <!-- leg_fr -->
+  <joint name="frame1_fr_to_base_link" type="fixed">
+    <parent link="base_link"/>
+    <child  link="frame1_fr"/>
+    <origin xyz="0 -0.14 -0.1" rpy="0 0 0"/>
+  </joint>
+  <link name="frame1_fr">
+    <visual>
+      <geometry>
+        <box size="0.27 0.02 0.09"/>
+      </geometry>
+      <origin xyz="0.135 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.27 0.02 0.09"/>
+      </geometry>
+      <origin xyz="0.135 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+  </link>
+  <gazebo reference="frame1_fr">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="frame2_fr_to_frame1_fr" type="fixed">
+    <parent link="frame1_fr"/>
+    <child  link="frame2_fr"/>
+    <origin xyz="0.23 -0.02 -0.045" rpy="0 0 0"/>
+  </joint>
+  <link name="frame2_fr">
+    <visual>
+      <geometry>
+        <box size="0.08 0.02 0.05"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.08 0.02 0.05"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+  </link>
+  <gazebo reference="frame2_fr">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="gear_fr_to_frame2_fr" type="fixed">
+    <parent link="frame2_fr"/>
+    <child  link="gear_fr"/>
+    <origin xyz="0 -0.035 -0.06" rpy="0 0 0"/>
+  </joint>
+  <link name="gear_fr">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.07"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="gear"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.07"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="gear"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="gear_fr">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+
+  <joint name="frame3_fr_to_gear_fr" type="revolute">
+    <parent link="gear_fr"/>
+    <child  link="frame3_fr"/>
+    <axis xyz="0 0 1"/>
+    <origin xyz="0 0.02 -0.08" rpy="0 0 0"/>
+    <limit lower="-3.1415" upper="3.1415" effort="30" velocity="10"/>
+    <dybamics damping="10000.0" friction="10000.0" />
+  </joint>
+  <transmission name="frame3_fr_to_gear_fr_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="frame3_fr_to_gear_fr">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="frame3_fr_to_gear_fr_motor">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanismReduction>1</mechanismReduction>
+    </actuator>
+  </transmission>
+  <!--<joint name="frame3_fr_to_gear_fr" type="fixed">
+    <parent link="gear_fr"/>
+    <child  link="frame3_fr"/>
+    <origin xyz="0 0.0 -0.08" rpy="0 0 0"/>
+  </joint>-->
+
+  <link name="frame3_fr">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="frame3_fr">
+    <material>Gazebo/Grey</material>
+    <mu1 value="2500" />
+    <mu2 value="2500" />
+  </gazebo>
+
+  <joint name="motor_fr_to_frame3_fr" type="fixed">
+    <parent link="frame3_fr"/>
+    <child  link="motor_fr"/>
+    <origin xyz="0 0.02 -0.09" rpy="0 0 0"/>
+  </joint>
+  <link name="motor_fr">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <material name="motor"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <material name="motor"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="motor_fr">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="wheel_fr_to_motor_fr" type="continuous">
+    <parent link="motor_fr"/>
+    <child  link="wheel_fr"/>
+    <origin xyz="0 -0.09 0" rpy="0 0 0"/>
+   <!-- <origin xyz="0 -0.15 0" rpy="0 0 0"/>  -->
+    <axis xyz="0 1 0"/>
+    <limit effort="100" velocity="100"/>
+    <dynamics damping="0.1" friction="0.0"/> 
+  </joint>
+  <transmission name="wheel_fr_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wheel_fr_to_motor_fr">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wheel_fr_motor">
+      <!-- <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanismReduction>1</mechanismReduction>
+    </actuator>
+  </transmission>
+
+  <link name="wheel_fr">
+    <visual>
+      <geometry>
+        <cylinder length="0.09" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <material name="wheel"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.09" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <material name="wheel"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="wheel_fr">
+    <material>Gazebo/Black</material>
+    <mu1 value="200.0" />
+    <mu2 value="100.0" />
+    <kp value="10000000.0" />
+    <kd value="1.0" />
+  </gazebo>
+
+
+
+    <!-- leg_br -->
+  <joint name="frame1_br_to_base_link" type="fixed">
+    <parent link="base_link"/>
+    <child  link="frame1_br"/>
+    <origin xyz="0 -0.14 -0.1" rpy="0 0 0"/>
+  </joint>
+  <link name="frame1_br">
+    <visual>
+      <geometry>
+        <box size="0.27 0.02 0.09"/>
+      </geometry>
+      <origin xyz="-0.135 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.27 0.02 0.09"/>
+      </geometry>
+      <origin xyz="-0.135 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+  </link>
+  <gazebo reference="frame1_br">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="frame2_br_to_frame1_br" type="fixed">
+    <parent link="frame1_br"/>
+    <child  link="frame2_br"/>
+    <origin xyz="-0.23 -0.02 -0.045" rpy="0 0 0"/>
+  </joint>
+  <link name="frame2_br">
+    <visual>
+      <geometry>
+        <box size="0.08 0.02 0.05"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.08 0.02 0.05"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+  </link>
+  <gazebo reference="frame2_br">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="gear_br_to_frame2_br" type="fixed">
+    <parent link="frame2_br"/>
+    <child  link="gear_br"/>
+    <origin xyz="0 -0.035 -0.06" rpy="0 0 0"/>
+  </joint>
+  <link name="gear_br">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.07"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="gear"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.07"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="gear"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="gear_br">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+  <joint name="frame3_br_to_gear_br" type="revolute">
+    <parent link="gear_br"/>
+    <child  link="frame3_br"/>
+    <axis xyz="0 0 1"/>
+    <origin xyz="0 0.02 -0.08" rpy="0 0 0"/>
+    <limit lower="-3.1415" upper="3.1415" effort="30" velocity="10"/>
+    <dybamics damping="10000.0" friction="10000.0" />
+  </joint>
+  <transmission name="frame3_br_to_gear_br_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="frame3_br_to_gear_br">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="frame3_br_to_gear_br_motor">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanismReduction>1</mechanismReduction>
+    </actuator>
+  </transmission>
+  <!--<joint name="frame3_br_to_gear_br" type="fixed">
+    <parent link="gear_br"/>
+    <child  link="frame3_br"/>
+    <origin xyz="0 0.0 -0.08" rpy="0 0 0"/>
+  </joint>-->
+
+  <link name="frame3_br">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="frame3_br">
+    <material>Gazebo/Green</material>
+    <mu1 value="2500" />
+    <mu2 value="2500" />
+  </gazebo>
+
+  <joint name="motor_br_to_frame3_br" type="fixed">
+    <parent link="frame3_br"/>
+    <child  link="motor_br"/>
+    <origin xyz="0 0.02 -0.09" rpy="0 0 0"/>
+  </joint>
+  <link name="motor_br">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <material name="motor"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <material name="motor"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="motor_br">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <joint name="wheel_br_to_motor_br" type="continuous">
+    <parent link="motor_br"/>
+    <child  link="wheel_br"/>
+    <origin xyz="0 -0.09 0" rpy="0 0 0"/>
+    <!-- <origin xyz="0 -0.15 0" rpy="0 0 0"/> -->
+    <axis xyz="0 1 0"/>
+    <limit effort="100" velocity="100"/>
+    <dynamics damping="0.1" friction="0.0"/> 
+  </joint>
+  <transmission name="wheel_br_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wheel_br_to_motor_br">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wheel_br_motor">
+      <!-- <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanismReduction>1</mechanismReduction>
+    </actuator>
+  </transmission>
+
+  <link name="wheel_br">
+    <visual>
+      <geometry>
+        <cylinder length="0.09" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <material name="wheel"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.09" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <material name="wheel"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+  <gazebo reference="wheel_br">
+    <material>Gazebo/Black</material>
+    <mu1 value="200.0" />
+    <mu2 value="100.0" />
+    <kp value="10000000.0" />
+    <kd value="1.0" />
+  </gazebo>
+
+  <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <robotNamespace>/pf1</robotNamespace>
+      <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
+      <legacyModeNS>true</legacyModeNS>
+      <!-- <commandTopic>cmd_vel</commandTopic>
+      <odometryTopic>odom</odometryTopic>
+      <odometryFrame>odom</odometryFrame>
+      <leftJoint>wheel_left_joint</leftJoint>
+      <rightJoint>wheel_right_joint</rightJoint> -->
+    </plugin>
+  </gazebo>
+
+  <!-- <gazebo>
+    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
+      <commandTopic>cmd_vel</commandTopic>
+      <odometryTopic>odom</odometryTopic>
+      <odometryFrame>odom</odometryFrame>
+      <odometrySource>world</odometrySource>
+      <publishOdomTF>true</publishOdomTF>
+      <robotBaseFrame>base_footprint</robotBaseFrame>
+      <publishWheelTF>false</publishWheelTF>
+      <publishTf>true</publishTf>
+      <publishWheelJointState>true</publishWheelJointState>
+      <legacyMode>true</legacyMode>
+      <updateRate>30</updateRate>
+      <leftJoint>wheel_left_joint</leftJoint>
+      <rightJoint>wheel_right_joint</rightJoint>
+      <wheelSeparation>0.160</wheelSeparation>
+      <wheelDiameter>0.066</wheelDiameter>
+      <wheelAcceleration>1</wheelAcceleration>
+      <wheelTorque>10</wheelTorque>
+      <rosDebugLevel>na</rosDebugLevel>
+    </plugin>
+  </gazebo> -->
+</robot>

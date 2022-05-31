@@ -25,7 +25,3 @@ footprint: [[-0.2, -0.25], [-0.2, 0.25], [0.2, 0.25], [0.2, -0.25]]
 # footprint: [[-0.2, -0.12], [-0.2, 0.12], [0.05, 0.12], [0.05, -0.12]]
 inflation_radius: 1.0
 cost_scaling_factor: 3.0
-
-map_type: costmap
-observation_sources: scan
-scan: {sensor_frame: hokuyo_sensor, data_type: LaserScan, topic: scan, marking: true, clearing: true}

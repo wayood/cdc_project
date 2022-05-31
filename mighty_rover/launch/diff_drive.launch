@@ -99,9 +99,16 @@
       <param name="map_frame"  value="map" />
     </node>
 
+
+    <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan">
+      <remap from="cloud_in" to="camera/depth/points"/>
+      <param name="target_frame" value="base_link" />
+      <param name="min_height" value="0.0" />
+      <param name="max_height" value="5.0" />
+    </node>
     <!-- <node pkg="teb_local_planner" type="teb_local_planner" respawn="false" name="teb_local_planner" output="screen">
            <remap from="odom" to="/odom"/>
-           <remap from="obstacles" to= -->
+           <remap from="obstacles" to="" -->
     <!-- move_base -->
     <!-- <node pkg="astar" type="astar" name="astar" output="screen">
         <param name="Euclidean" value="true"/>
@@ -114,7 +121,7 @@
       <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />
       <rosparam file="$(find mighty_rover)/config/move_base/costmap_v2.yaml" command="load" ns="global_costmap" />
       <rosparam file="$(find mighty_rover)/config/move_base/costmap_v2.yaml" command="load" ns="local_costmap" />
-      <rosparam file="$(find mighty_rover)/config/move_base/local_costmap_params_v2.yaml" command="load" />
+      <rosparam file="$(find mighty_rover)/config/move_base/local_costmap_params_v2.yaml" command="load" ns="local_costmap"/>
       <rosparam file="$(find mighty_rover)/config/move_base/global_costmap_params_v2.yaml" command="load" />
       <rosparam file="$(find mighty_rover)/config/move_base/move_base_params_v2.yaml" command="load" />
       <rosparam file="$(find mighty_rover)/config/move_base/dwa_local_planner_params_v2.yaml" command="load" />

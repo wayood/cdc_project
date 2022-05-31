@@ -7,6 +7,9 @@
 #   transform_tolerance: 0.5
 
 #   static_map: true
+map_type: costmap
+observation_sources: scan
+scan: {sensor_frame: hokuyo_sensor, data_type: LaserScan, topic: scan, marking: true, clearing: true}
 
 global_costmap:
   global_frame: map

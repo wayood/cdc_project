@@ -1,0 +1,1 @@
+            -L/home/wayo/catkin_ws/src/cdc_project/Ipopt-3.12.8/build/lib -L/home/wayo/catkin_ws/src/cdc_project/Ipopt-3.12.8/build/lib -lipopt -llapack -lblas -ldl -lcoinmumps -lblas -lcoinmetis             -lstdc++ -lm

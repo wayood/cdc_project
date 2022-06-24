@@ -1,0 +1,10 @@
+prefix=/home/wayo/catkin_ws/src/cdc_project/Ipopt-3.12.8/build
+libdir=/home/wayo/catkin_ws/src/cdc_project/Ipopt-3.12.8/build/Ipopt/src/Interfaces
+
+Name: IPOPT
+Description: Interior Point Optimizer
+URL: https://projects.coin-or.org/Ipopt
+Version: 3.12.8
+Libs: ${libdir}/libipopt.la -llapack -lblas -lm  -ldl
+Cflags: -I/home/wayo/catkin_ws/src/cdc_project/Ipopt-3.12.8/Ipopt/src/Interfaces -I/home/wayo/catkin_ws/src/cdc_project/Ipopt-3.12.8/Ipopt/src/Common -I/home/wayo/catkin_ws/src/cdc_project/Ipopt-3.12.8/Ipopt/src/LinAlg -I/home/wayo/catkin_ws/src/cdc_project/Ipopt-3.12.8/Ipopt/src/Algorithm -I/home/wayo/catkin_ws/src/cdc_project/Ipopt-3.12.8/Ipopt/src/contrib/CGPenalty -I/home/wayo/catkin_ws/src/cdc_project/Ipopt-3.12.8/Ipopt/src/contrib/LinearSolverLoader -I/home/wayo/catkin_ws/src/cdc_project/Ipopt-3.12.8/build/Ipopt/src/Common
+Requires: coinmumps 

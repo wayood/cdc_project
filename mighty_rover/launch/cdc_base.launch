@@ -12,7 +12,6 @@
 
 <!--<group ns="$(arg model)">-->
 
-
 <!-- Launch gazebo -->
 <include file="$(find mighty_rover)/launch/gazebo.launch">
   <arg name="model" value="$(arg model)"/>
@@ -24,18 +23,6 @@
 
 <!-- <node name="tf_broadcast" pkg="mighty_rover" type="tf_broadcast"/>
 <node name="tf_listen" pkg="mighty_rover" type="tf_listen"/> -->
-
-<!--動的障害物についてs-->
-<!-- <node pkg="mighty_rover" type="move_obs.py" name="move_obs" output="screen"/> -->
-<!-- <node pkg="mighty_rover" type="move_obs_0.py" name="move_obs_0" output="screen"/> -->
-<!--<node pkg="mighty_rover" type="move_obs_1.py" name="move_obs_1" output="screen"/>-->
-<!-- <node pkg="mighty_rover" type="move_obs_2.py" name="move_obs_2" output="screen"/> -->
-<!-- <node pkg="mighty_rover" type="move_obs_3.py" name="move_obs_3" output="screen"/> -->
-<!-- <node pkg="mighty_rover" type="move_obs_4.py" name="move_obs_4" output="screen"/> -->
-<!-- <node pkg="mighty_rover" type="move_obs_5.py" name="move_obs_5" output="screen"/> -->
-<!-- <node pkg="mighty_rover" type="move_obs_6.py" name="move_obs_6" output="screen"/> -->
-<!-- <node pkg="mighty_rover" type="move_obs_7.py" name="move_obs_7" output="screen"/> -->
-<!-- <node pkg="mighty_rover" type="move_obs_8.py" name="move_obs_8" output="screen"/>  -->
 
 <!-- Load joint controller configuration from YAML file to parameter server -->
 
@@ -85,7 +72,7 @@
 
 
     <!--map-->
-    <node pkg="map_server" name="map_server" type="map_server" args="$(find mighty_rover)/map/chuo.yaml"/>
+    <node pkg="map_server" name="map_server" type="map_server" args="$(find mighty_rover)/map/cdc_base.yaml"/>
 
      <!-- amcl -->
     <node pkg="amcl" type="amcl" name="amcl" clear_params="true">
@@ -97,12 +84,12 @@
     </node>
 
 <!-- feture object detection -->
-    <node name="find_object_3d" pkg="find_object_2d" type="find_object_2d" output="screen">
+    <!-- <node name="find_object_3d" pkg="find_object_2d" type="find_object_2d" output="screen">
      <rosparam file="$(find mighty_rover)/config/find_object_2d.yaml" command="load"/>
      <remap from="rgb/image_rect_color" to="camera/rgb/image_raw"/>
      <remap from="depth_registered/camera_info" to="camera/depth/camera_info"/>
      <remap from="depth_registered/image_raw" to="camera/depth/image_raw"/>
-    </node>
+    </node> -->
 
     <!-- global plan-->
     <!-- <node pkg="astar" type="astar" name="astar" output="screen" respawn="false">
@@ -113,8 +100,8 @@
     </node> -->
 
     <!--local plan-->
-    <!-- <arg name="hz" default="5"/>
-    <arg name="use_scan_as_input" default="false"/>
+    <arg name="hz" default="5"/>
+    <arg name="use_scan_as_input" default="true"/>
     <arg name="robot_param" default="$(find mighty_rover)/config/robot_param.yaml"/>
     <arg name="dwa_param" default="$(find mighty_rover)/config/dwa_param.yaml"/> 
     
@@ -125,12 +112,16 @@
         <param name="USE_SCAN_AS_INPUT" value="$(arg use_scan_as_input)"/>
         <remap from="/local_map" to="map"/>
         <remap from="/scan" to="scan"/> 
-        <remap from="/path" to="/nav_path"/>
+        <!-- <remap from="/path" to="/nav_path"/> -->
         <remap from="/local_goal" to="move_base_simple/goal"/>
         <remap from="/cmd_vel" to="diff_drive_controller/cmd_vel"/>
         <remap from="/odom" to="diff_drive_controller/odom"/>
-    </node> -->
+    </node>
 
+<!-- <node pkg="image_proc" type="image_proc" name="image_proc" ns="right"/>
+<node pkg="image_proc" type="image_proc" name="image_proc" ns="left"/>
+  <node pkg="stereo_image_proc" type="stereo_image_proc"
+        name="stereo_image_proc" args="_approximate_sync:=True" /> -->
  <!--</group>-->
 <arg name="paused" default="false"/>
 <arg name="use_sim_time" default="true"/>

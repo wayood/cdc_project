@@ -1,6 +1,6 @@
 diff_drive_controller:
      type: "diff_drive_controller/DiffDriveController"
-     publish_rate: 50
+     publish_rate: 20
 
      left_wheel: ['left_front_wheel_joint','left_back_wheel_joint']
      right_wheel: ['right_front_wheel_joint','right_back_wheel_joint']
@@ -29,6 +29,6 @@ diff_drive_controller:
      angular:
        z:
          has_velocity_limits    : true
-         max_velocity           : 3.5   # rad/s 1 2.5
+         max_velocity           : 50  # rad/s 1 2.5
          has_acceleration_limits: true
          max_acceleration       : 3   # rad/s^2 2.0

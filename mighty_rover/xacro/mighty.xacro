@@ -166,11 +166,6 @@
   <dynamics damping="0.0" friction="0.0"/>  
 </joint>
 
---
-
---
-
---
 
  <transmission name="${prefix}_${suffix}_wheel_trans">
       <type>transmission_interface/SimpleTransmission</type>
@@ -184,11 +179,6 @@
  </transmission>
 </xacro:macro>
 
-<!--<xacro:macro name="body"parent="base_link" />
-<xacro:wheel prefix="right" suffix="front" parent="base_link" X="1" Y="0" Z="-1"/>
-<xacro:wheel prefix="right" suffix="back" parent="base_link" X="0" Y="1" Z="-1"/>
-<xacro:wheel prefix="left" suffix="front" parent="base_link" X="1" Y="0" Z="1"/>
-<xacro:wheel prefix="left" suffix="back" parent="base_link" X="0" Y="1" Z="1"/>-->
 
 <xacro:wheel prefix="right" suffix="front" X="1" Y="0" Z="-1"/>
 <xacro:wheel prefix="right" suffix="back" X="0" Y="1" Z="-1"/>
@@ -223,52 +213,6 @@
       </sensor>
     </gazebo>
 
-
-<!--<link name="hokuyo_sensor">
-  <visual>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-   <geometry>
-     <box size="0.05 0.05 0.05"/>
-   </geometry>
-   <material name="Blue"/>
-   </visual>
- </link>
-
-<joint name="hokuyo_joint" type="fixed">
-  <origin xyz="0.07 0 0.08" rpy="0 0 0"/>
-  <parent link="base_link"/>
-  <child link="hokuyo_sensor"/>
-</joint>
-
-<gazebo reference="hokuyo_sensor">
-  <material>Gazebo/Blue</material>
-  <turnGravityOff>false</turnGravityOff>
-  <sensor type="ray" name="base_link_hokuyo_sensor">
-   <pose>0.025 0 0 0 0 0</pose>
-   <visualize>false</visualize>
-   <update_rate>40</update_rate>
-   <ray>
-     <scan>
-       <horizontal>
-         <samples>720</samples>
-         <resolution>1</resolution>
-         <min_angle>-1.57</min_angle>
-         <max_angle>1.57</max_angle>  
-        </horizontal>
-      </scan>
-     <range>
-        <min>0.10</min>
-        <max>10.0</max>
-        <resolution>0.001</resolution>
-      </range>
-     </ray>
-     <plugin name="gazebo_ros_head_hokuyo_controller" 
-          filename="libgazebo_ros_laser.so">
-        <topicName>/scan</topicName>
-        <frameName>hokuyo_sensor</frameName>
-       </plugin>
-      </sensor>
-     </gazebo>   -->
 
 <link name="hokuyo_sensor">
 <collision>
@@ -312,7 +256,7 @@
               <samples>400</samples>
               <resolution>1</resolution>
               <min_angle>${radians(-150)}</min_angle>
-              <max_angle>${radians( 150)}</max_angle>-->
+              <max_angle>${radians( 150)}</max_angle>
             <!--<min_angle>-1.570796</min_angle>
             <max_angle>1.570796</max_angle>-->
          </horizontal>
@@ -337,39 +281,38 @@
     </gazebo>
 
 
-
-
-
-
-
-
-
-    <property name="M_PI" value="3.14159274"/>
-    <link name="camera_link">
-        <visual>
-        <!--origin xyz="0.05 0 0.05" rpy="0 0 0"/-->
-          <geometry>
-            <mesh filename="package://openni_description/mesh/kinect.dae"/>
-          </geometry>
-        
-        </visual>
+<property name="M_PI" value="3.14159274"/>
+<link name="camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
        
-     </link>
+         <mesh filename="package://openni_description/mesh/kinect.dae"/>
+      </geometry>
+     
+    </visual>
+    <collision>
+        <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
+  	    <geometry>
+  	      <box size="0.07271 0.27794 0.073"/>
+  	    </geometry>
+  	  </collision>
+  </link>
 
-    <joint name="camera_joint" type="fixed">
-      <origin xyz="0.05 0 0.05" rpy="${radians(-90)} 0 ${radians(-90)}"/>
-      <parent link="base_link"/>
-      <child link="camera_link"/>
-    </joint>
+  <joint name="camera_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="camera_link"/>
+  </joint>
 
-   <gazebo reference="camera_link">
+<gazebo reference="camera_link">  
       <sensor type="depth" name="camera">
         <always_on>true</always_on>
         <visualize>true</visualize>
         <update_rate>20.0</update_rate>
         <camera>
-          <pose>0 0 0 0 ${radians(-90)} ${radians(90)}</pose>
           <horizontal_fov>${60.0*M_PI/180.0}</horizontal_fov>
+          <pose>0 0 0 ${M_PI/2} ${-M_PI/2} 0</pose>
           <image>
             <format>B8G8R8</format>
             <width>640</width>
@@ -401,6 +344,82 @@
         </plugin>
       </sensor>
     </gazebo>
+
+
+
+
+
+    <!--<property name="M_PI" value="3.14159274"/>
+    <link name="camera_link">
+        <visual>
+        <origin xyz="0.05 0 0.05" rpy="0 0 0"/>
+        
+        </visual>
+       
+     </link>
+
+    <joint name="camera_joint" type="fixed">
+      <origin xyz="0.05 0 0.05" rpy="0 0 0"/>
+      <parent link="base_link"/>
+      <child link="camera_link"/>
+    </joint>
+
+   <gazebo reference="camera_link">
+   <sensor type="multicamera" name="stereo_camera">
+      <update_rate>30.0</update_rate>
+      <camera name="left">
+        <pose>0 0.3 0 0 0 0</pose> 
+        <horizontal_fov>1.3962634</horizontal_fov>
+        <image>
+          <width>800</width> <!0.7 0.3 0.3 -1.56 -0.78>
+          <height>800</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise>
+      </camera>
+      <camera name="right">
+        <pose>0 -0.3 0 0 0 0</pose>
+        <horizontal_fov>1.3962634</horizontal_fov>
+        <image>
+          <width>800</width>
+          <height>800</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.02</near>
+          <far>300</far>
+        </clip>
+        <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise>
+      </camera>
+      <plugin name="stereo_camera_controller" filename="libgazebo_ros_multicamera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>30.0</updateRate>
+        <cameraName></cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>camera_link</frameName>
+        <!<rightFrameName>right_camera_optical_frame</rightFrameName>>
+        <hackBaseline>0.3</hackBaseline>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+    </sensor>
+    </gazebo> -->
 
 
 

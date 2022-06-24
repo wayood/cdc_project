@@ -25,7 +25,7 @@
 
 <rosparam file="$(find mighty_rover)/config/joint_states.yaml" command="load"/>
 
-<rosparam file="$(find mighty_rover)/config/diff_drive_pf1_gazebo.yaml" command="load"/>
+<rosparam file="$(find mighty_rover)/config/diff_drive_pf1.yaml" command="load"/>
 
 
 
@@ -38,7 +38,11 @@
 <!--<param name="tf_prefix" value="$(arg robot_name)"/>-->
 
  <!--</group>-->
+<node name="robot_arm_controller_spawner" pkg="controller_manager" type="spawner" respawn="true" output="screen" 
+   args="joint_state_controller
+         diff_drive_controller"/>
 
+<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen"/>
 
 <!-- steering -->
 <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
@@ -103,7 +107,6 @@
       <remap from="cmd_vel" to="diff_drive_controller/cmd_vel" />
       <remap from="odom" to="diff_drive_controller/odom" />
     </node>
--->
  <!--</group>-->
 
 </launch>

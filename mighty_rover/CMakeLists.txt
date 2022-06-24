@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   smach
   smach_ros
+  pcl_ros
 
 )
 
@@ -142,6 +143,9 @@ include_directories(
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(goal_point src/goal_point.cpp)
 target_link_libraries(goal_point ${catkin_LIBRARIES})
+
+add_executable(3d_mesurment src/3d_mesurment.cpp)
+target_link_libraries(3d_mesurment ${catkin_LIBRARIES})
 
 add_executable(goal_sub src/goal_sub.cpp)
 target_link_libraries(goal_sub ${catkin_LIBRARIES})

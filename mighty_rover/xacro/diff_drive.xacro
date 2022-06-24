@@ -214,51 +214,6 @@
     </gazebo>
 
 
-<!--<link name="hokuyo_sensor">
-  <visual>
-    <origin xyz="0 0 0" rpy="0 0 0"/>
-   <geometry>
-     <box size="0.05 0.05 0.05"/>
-   </geometry>
-   <material name="Blue"/>
-   </visual>
- </link>
-
-<joint name="hokuyo_joint" type="fixed">
-  <origin xyz="0.07 0 0.08" rpy="0 0 0"/>
-  <parent link="base_link"/>
-  <child link="hokuyo_sensor"/>
-</joint>
-
-<gazebo reference="hokuyo_sensor">
-  <material>Gazebo/Blue</material>
-  <turnGravityOff>false</turnGravityOff>
-  <sensor type="ray" name="base_link_hokuyo_sensor">
-   <pose>0.025 0 0 0 0 0</pose>
-   <visualize>false</visualize>
-   <update_rate>40</update_rate>
-   <ray>
-     <scan>
-       <horizontal>
-         <samples>720</samples>
-         <resolution>1</resolution>
-         <min_angle>-1.57</min_angle>
-         <max_angle>1.57</max_angle>  
-        </horizontal>
-      </scan>
-     <range>
-        <min>0.10</min>
-        <max>10.0</max>
-        <resolution>0.001</resolution>
-      </range>
-     </ray>
-     <plugin name="gazebo_ros_head_hokuyo_controller" 
-          filename="libgazebo_ros_laser.so">
-        <topicName>/scan</topicName>
-        <frameName>hokuyo_sensor</frameName>
-       </plugin>
-      </sensor>
-     </gazebo>   -->
 
 <link name="hokuyo_sensor">
 <collision>
@@ -292,7 +247,7 @@
 <gazebo reference="hokuyo_sensor">
     <sensor type="gpu_ray" name="base_link_hokuyo_sensor">
       <pose>0 0 0 0 0 0</pose>
-      <visualize>true</visualize>
+      <visualize>false</visualize>
       <update_rate>40</update_rate>
       <ray>
         <scan>
@@ -354,7 +309,7 @@
   </link>
 
   <joint name="camera_joint" type="fixed">
-    <origin xyz="0 0 0" rpy="0 0 ${M_PI/2}"/>
+    <origin xyz="0 0 0" rpy="${M_PI/-2} 0 ${M_PI/-2}"/>
     <parent link="base_link"/>
     <child link="camera_link"/>
   </joint>
@@ -366,6 +321,7 @@
         <update_rate>20.0</update_rate>
         <camera>
           <horizontal_fov>${60.0*M_PI/180.0}</horizontal_fov>
+          <pose>0 0 0 0 ${radians(-90)} ${radians(90)}</pose>
           <image>
             <format>B8G8R8</format>
             <width>640</width>

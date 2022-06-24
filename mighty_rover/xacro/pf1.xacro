@@ -292,35 +292,8 @@
         <visualize>0</visualize>
       </sensor>
     </gazebo>
-      <gazebo>
-      <plugin name="camera" filename="librealsense_gazebo_plugin.so">
-        <prefix>camera</prefix>
-        <depthUpdateRate>30.0</depthUpdateRate>
-        <colorUpdateRate>30.0</colorUpdateRate>
-        <infraredUpdateRate>30.0</infraredUpdateRate>
-        <depthTopicName>depth/image_raw</depthTopicName>
-        <depthCameraInfoTopicName>depth/camera_info</depthCameraInfoTopicName>
-        <colorTopicName>color/image_raw</colorTopicName>
-        <colorCameraInfoTopicName>color/camera_info</colorCameraInfoTopicName>
-        <infrared1TopicName>infra1/image_raw</infrared1TopicName>
-        <infrared1CameraInfoTopicName>infra1/camera_info</infrared1CameraInfoTopicName>
-        <infrared2TopicName>infra2/image_raw</infrared2TopicName>
-        <infrared2CameraInfoTopicName>infra2/camera_info</infrared2CameraInfoTopicName>
-        <colorOpticalframeName>color_optical_frame</colorOpticalframeName>
-        <depthOpticalframeName>depth_optical_frame</depthOpticalframeName>
-        <infrared1OpticalframeName>infrared1_optical_frame</infrared1OpticalframeName>
-        <infrared2OpticalframeName>infrared2_optical_frame</infrared2OpticalframeName>
-        <rangeMinDepth>0.2</rangeMinDepth>
-        <rangeMaxDepth>10.0</rangeMaxDepth>
-        <pointCloud>true</pointCloud>
-        <pointCloudTopicName>depth/color/points</pointCloudTopicName>
-        <pointCloudCutoff>0.25</pointCloudCutoff>
-        <pointCloudCutoffMax>9.0</pointCloudCutoffMax>
-      </plugin>
-    </gazebo>
 
-   
-    <!-- camera depth joints and links -->
+        <!-- camera depth joints and links -->
     <joint name="camera_depth_joint" type="fixed">
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <parent link="camera_link"/>
@@ -387,6 +360,36 @@
     </joint>
 
     <link name="camera_color_optical_frame"/>
+
+      <gazebo>
+      <plugin name="camera" filename="librealsense_gazebo_plugin.so">
+        <prefix>camera</prefix>
+        <depthUpdateRate>30.0</depthUpdateRate>
+        <colorUpdateRate>30.0</colorUpdateRate>
+        <infraredUpdateRate>30.0</infraredUpdateRate>
+        <depthTopicName>depth/image_raw</depthTopicName>
+        <depthCameraInfoTopicName>depth/camera_info</depthCameraInfoTopicName>
+        <colorTopicName>color/image_raw</colorTopicName>
+        <colorCameraInfoTopicName>color/camera_info</colorCameraInfoTopicName>
+        <infrared1TopicName>infra1/image_raw</infrared1TopicName>
+        <infrared1CameraInfoTopicName>infra1/camera_info</infrared1CameraInfoTopicName>
+        <infrared2TopicName>infra2/image_raw</infrared2TopicName>
+        <infrared2CameraInfoTopicName>infra2/camera_info</infrared2CameraInfoTopicName>
+        <colorOpticalframeName>camera_color_optical_frame</colorOpticalframeName>
+        <depthOpticalframeName>camera_depth_optical_frame</depthOpticalframeName>
+        <infrared1OpticalframeName>infrared1_optical_frame</infrared1OpticalframeName>
+        <infrared2OpticalframeName>infrared2_optical_frame</infrared2OpticalframeName>
+        <rangeMinDepth>0.2</rangeMinDepth>
+        <rangeMaxDepth>10.0</rangeMaxDepth>
+        <pointCloud>true</pointCloud>
+        <pointCloudTopicName>depth/color/points</pointCloudTopicName>
+        <pointCloudCutoff>0.25</pointCloudCutoff>
+        <pointCloudCutoffMax>9.0</pointCloudCutoffMax>
+      </plugin>
+    </gazebo>
+
+   
+
 
     <!--end of realsense setup-->
 
@@ -1318,9 +1321,9 @@
 
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-      <robotNamespace>/pf1</robotNamespace>
+      <!-- <robotNamespace>/pf1</robotNamespace>
       <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
-      <legacyModeNS>true</legacyModeNS>
+      <legacyModeNS>true</legacyModeNS> -->
       <!-- <commandTopic>cmd_vel</commandTopic>
       <odometryTopic>odom</odometryTopic>
       <odometryFrame>odom</odometryFrame>

@@ -52,21 +52,22 @@ public:
     void odom_callback(const nav_msgs::OdometryConstPtr&);
     void target_velocity_callback(const geometry_msgs::TwistConstPtr&);
 
-    void path_callback(const nav_msgs::Path&);
+    // void path_callback(const nav_msgs::Path&);
 
     Window calc_dynamic_window(const geometry_msgs::Twist&);
     float calc_to_goal_cost(const std::vector<State>& traj, const Eigen::Vector3d& goal);
     float calc_speed_cost(const std::vector<State>& traj, const float target_velocity);
     float calc_obstacle_cost(const std::vector<State>& traj, const std::vector<std::vector<float>>&);
 
-    float calc_path_cost(const std::vector<State>& traj, const nav_msgs::Path&);
+    // float calc_path_cost(const std::vector<State>& traj, const nav_msgs::Path&);
 
     void motion(State& state, const double velocity, const double yawrate);
     std::vector<std::vector<float>> raycast();
     std::vector<std::vector<float>> scan_to_obs();
     void visualize_trajectories(const std::vector<std::vector<State>>&, const double, const double, const double, const int, const ros::Publisher&);
     void visualize_trajectory(const std::vector<State>&, const double, const double, const double, const ros::Publisher&);
-    std::vector<State> dwa_planning(Window, Eigen::Vector3d, std::vector<std::vector<float>>, const nav_msgs::Path&);
+    std::vector<State> dwa_planning(Window, Eigen::Vector3d, std::vector<std::vector<float>>);
+    // , const nav_msgs::Path&
 protected:
     double HZ;
     std::string ROBOT_FRAME;
@@ -100,11 +101,12 @@ protected:
     ros::Subscriber scan_sub;
     ros::Subscriber local_goal_sub;
     ros::Subscriber odom_sub;
-    ros::Subscriber path_sub;
+    // ros::Subscriber path_sub;
     ros::Subscriber target_velocity_sub;
     tf::TransformListener listener;
 
     geometry_msgs::PoseStamped local_goal;
+    geometry_msgs::PoseStamped local_goal_struct;
     sensor_msgs::LaserScan scan;
     nav_msgs::OccupancyGrid local_map;
     geometry_msgs::Twist current_velocity;
@@ -113,7 +115,7 @@ protected:
     bool scan_updated;
     bool local_map_updated;
     bool odom_updated;
-    bool path_subscribed;
+    // bool path_subscribed;
 };
 
 #endif //__DWA_PLANNER_H

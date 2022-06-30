@@ -16,5 +16,5 @@ def handle_turtle_pose(msg, turtlename):
 if __name__ == '__main__':
      rospy.init_node('turtle_tf_broadcaster')
      
-     handle_turtle_pose();
+     handle_turtle_pose()
      rospy.spin()

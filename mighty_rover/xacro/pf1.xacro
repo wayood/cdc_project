@@ -427,7 +427,7 @@
 
 
     <gazebo reference="hokuyo_sensor">
-      <sensor type="gpu_ray" name="base_link_hokuyo_sensor">
+      <sensor type="ray" name="base_link_hokuyo_sensor">
         <pose>0 0 0 0 0 0</pose>
        
         <visualize>false</visualize>
@@ -457,7 +457,7 @@
             <stddev>0.01</stddev>
           </noise>
         </ray>
-        <plugin name="gazebo_ros_lidar_controller" filename="libgazebo_ros_gpu_laser.so">
+        <plugin name="gazebo_ros_lidar_controller" filename="libgazebo_ros_laser.so">
           <topicName>scan</topicName>
           <frameName>hokuyo_sensor</frameName>
         </plugin>
@@ -467,7 +467,7 @@
     
 
     <!-- leg_fl -->
-  <joint name="frame1_fl_to_base_link" type="fixed">
+  <!-- <joint name="frame1_fl_to_base_link" type="fixed">
     <parent link="base_link"/>
     <child  link="frame1_fl"/>
     <origin xyz="0 0.14 -0.1" rpy="0 0 0"/>
@@ -545,25 +545,24 @@
   </link>
   <gazebo reference="gear_fl">
     <material>Gazebo/Blue</material>
-  </gazebo>
+  </gazebo> -->
 
 
   <joint name="frame3_fl_to_gear_fl" type="revolute">
-    <parent link="gear_fl"/>
+    <parent link="base_link"/>
     <child  link="frame3_fl"/>
     <axis xyz="0 0 1"/>
-    <origin xyz="0 0.02 -0.08" rpy="0 0 0"/>
+    <origin xyz="0.23 0.195 -0.205" rpy="0 0 0"/>
     <limit lower="-3.1415" upper="3.1415" effort="30" velocity="10"/>
     <dybamics damping="10000.0" friction="10000.0" />
   </joint>
   <transmission name="frame3_fl_to_gear_fl_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="frame3_fl_to_gear_fl">
-        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="frame3_fl_to_gear_fl_motor">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-      <mechanismReduction>1</mechanismReduction>
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
     </actuator>
   </transmission>
 
@@ -603,7 +602,7 @@
     <mu2 value="2500" />
   </gazebo>
 
-  <joint name="motor_fl_to_frame3_fl" type="fixed">
+  <!-- <joint name="motor_fl_to_frame3_fl" type="fixed">
     <parent link="frame3_fl"/>
     <child  link="motor_fl"/>
     <origin xyz="0 -0.02 -0.09" rpy="0 0 0"/>
@@ -629,12 +628,12 @@
   </link>
   <gazebo reference="motor_fl">
     <material>Gazebo/Grey</material>
-  </gazebo>
+  </gazebo> -->
 
   <joint name="wheel_fl_to_motor_fl" type="continuous">
-    <parent link="motor_fl"/>
+    <parent link="frame3_fl"/>
     <child  link="wheel_fl"/>
-    <origin xyz="0 0.09 0" rpy="0 0 0"/>
+    <origin xyz="0 0.02 -0.09" rpy="0 0 0"/>
     <!-- <origin xyz="0 0.15 0" rpy="0 0 0"/> -->
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
@@ -646,9 +645,7 @@
         <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
     </joint>
     <actuator name="wheel_fl_motor">
-      <!-- <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
-      <hardwareInterface>EffortJointInterface</hardwareInterface>
-      <mechanismReduction>1</mechanismReduction>
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
     </actuator>
   </transmission>
 
@@ -681,10 +678,54 @@
     <kd value="1.0" />
   </gazebo>
 
+   <!-- virtual steer -->
+  <joint name="front_steer_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="front_steer_link"/>
+    <axis xyz="0 0 1"/>
+    <origin xyz="0.23 0.093 -0.205" rpy="0 0 0"/>
+    <limit lower="-3.1415" upper="3.1415" effort="30" velocity="10"/>
+    <dybamics damping="10000.0" friction="10000.0" />
+  </joint>
+  <transmission name="front_steer_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="front_steer_joint">
+        <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="front_steer_joint_motor">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanismReduction>1</mechanismReduction>
+    </actuator>
+  </transmission>
+  <link name="front_steer_link">
+    <visual>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.075 0.09 0.09"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <material name="frame"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
 
+    <gazebo reference="front_steer_joint">
+      <provideFeedback>true</provideFeedback>
+    </gazebo>
 
       <!-- leg_bl : mirror leg_fl to the y axis -->
-  <joint name="frame1_bl_to_base_link" type="fixed">
+  <!-- <joint name="frame1_bl_to_base_link" type="fixed">
     <parent link="base_link"/>
     <child  link="frame1_bl"/>
     <origin xyz="0 0.14 -0.1" rpy="0 0 0"/>
@@ -762,27 +803,27 @@
   </link>
   <gazebo reference="gear_bl">
     <material>Gazebo/Blue</material>
-  </gazebo>
+  </gazebo> -->
 
 
-  <joint name="frame3_bl_to_gear_bl" type="revolute">
-    <parent link="gear_bl"/>
+  <joint name="frame3_bl_to_gear_bl" type="fixed">
+    <parent link="base_link"/>
     <child  link="frame3_bl"/>
     <axis xyz="0 0 1"/>
-    <origin xyz="0 0.02 -0.08" rpy="0 0 0"/>
-    <limit lower="-3.1415" upper="3.1415" effort="30" velocity="10"/>
-    <dybamics damping="10000.0" friction="10000.0" />
+    <origin xyz="-0.23 0.175 -0.205" rpy="0 0 0"/>
+    <!-- <limit lower="-3.1415" upper="3.1415" effort="30" velocity="10"/>
+    <dybamics damping="10000.0" friction="10000.0" /> -->
   </joint>
-  <transmission name="frame3_bl_to_gear_bl_trans">
+  <!-- <transmission name="frame3_bl_to_gear_bl_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="frame3_bl_to_gear_bl">
-        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="frame3_bl_to_gear_bl_motor">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
       <mechanismReduction>1</mechanismReduction>
     </actuator>
-  </transmission>
+  </transmission> -->
   <!--<joint name="frame3_bl_to_gear_bl" type="fixed">
     <parent link="gear_bl"/>
     <child  link="frame3_bl"/>
@@ -816,7 +857,7 @@
     <mu2 value="2500" />
   </gazebo>
 
-  <joint name="motor_bl_to_frame3_bl" type="fixed">
+  <!-- <joint name="motor_bl_to_frame3_bl" type="fixed">
     <parent link="frame3_bl"/>
     <child  link="motor_bl"/>
     <origin xyz="0 -0.02 -0.09" rpy="0 0 0"/>
@@ -842,12 +883,12 @@
   </link>
   <gazebo reference="motor_bl">
     <material>Gazebo/Grey</material>
-  </gazebo>
+  </gazebo> -->
 
   <joint name="wheel_bl_to_motor_bl" type="continuous">
-    <parent link="motor_bl"/>
+    <parent link="base_link"/>
     <child  link="wheel_bl"/>
-    <origin xyz="0 0.09 0" rpy="0 0 0"/>
+    <origin xyz="-0.23 0.175 -0.295" rpy="0 0 0"/>
     <!-- <origin xyz="0 0.15 0" rpy="0 0 0"/> -->
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
@@ -859,7 +900,7 @@
         <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
     </joint>
     <actuator name="wheel_bl_motor">
-      <!-- <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
       <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanismReduction>1</mechanismReduction>
     </actuator>
@@ -897,7 +938,7 @@
 
 
     <!-- leg_fr -->
-  <joint name="frame1_fr_to_base_link" type="fixed">
+  <!-- <joint name="frame1_fr_to_base_link" type="fixed">
     <parent link="base_link"/>
     <child  link="frame1_fr"/>
     <origin xyz="0 -0.14 -0.1" rpy="0 0 0"/>
@@ -975,24 +1016,24 @@
   </link>
   <gazebo reference="gear_fr">
     <material>Gazebo/Blue</material>
-  </gazebo>
+  </gazebo> -->
 
 
   <joint name="frame3_fr_to_gear_fr" type="revolute">
-    <parent link="gear_fr"/>
+    <parent link="base_link"/>
     <child  link="frame3_fr"/>
     <axis xyz="0 0 1"/>
-    <origin xyz="0 0.02 -0.08" rpy="0 0 0"/>
+    <origin xyz="0.23 -0.195 -0.205" rpy="0 0 0"/>
     <limit lower="-3.1415" upper="3.1415" effort="30" velocity="10"/>
     <dybamics damping="10000.0" friction="10000.0" />
   </joint>
   <transmission name="frame3_fr_to_gear_fr_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="frame3_fr_to_gear_fr">
-        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="frame3_fr_to_gear_fr_motor">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
       <mechanismReduction>1</mechanismReduction>
     </actuator>
   </transmission>
@@ -1029,7 +1070,7 @@
     <mu2 value="2500" />
   </gazebo>
 
-  <joint name="motor_fr_to_frame3_fr" type="fixed">
+  <!-- <joint name="motor_fr_to_frame3_fr" type="fixed">
     <parent link="frame3_fr"/>
     <child  link="motor_fr"/>
     <origin xyz="0 0.02 -0.09" rpy="0 0 0"/>
@@ -1055,12 +1096,12 @@
   </link>
   <gazebo reference="motor_fr">
     <material>Gazebo/Grey</material>
-  </gazebo>
+  </gazebo> -->
 
   <joint name="wheel_fr_to_motor_fr" type="continuous">
-    <parent link="motor_fr"/>
+    <parent link="frame3_fr"/>
     <child  link="wheel_fr"/>
-    <origin xyz="0 -0.09 0" rpy="0 0 0"/>
+    <origin xyz="0 0.02 -0.09" rpy="0 0 0"/>
    <!-- <origin xyz="0 -0.15 0" rpy="0 0 0"/>  -->
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
@@ -1072,7 +1113,7 @@
         <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
     </joint>
     <actuator name="wheel_fr_motor">
-      <!-- <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
       <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanismReduction>1</mechanismReduction>
     </actuator>
@@ -1110,7 +1151,7 @@
 
 
     <!-- leg_br -->
-  <joint name="frame1_br_to_base_link" type="fixed">
+  <!-- <joint name="frame1_br_to_base_link" type="fixed">
     <parent link="base_link"/>
     <child  link="frame1_br"/>
     <origin xyz="0 -0.14 -0.1" rpy="0 0 0"/>
@@ -1188,26 +1229,26 @@
   </link>
   <gazebo reference="gear_br">
     <material>Gazebo/Blue</material>
-  </gazebo>
+  </gazebo> -->
 
-  <joint name="frame3_br_to_gear_br" type="revolute">
-    <parent link="gear_br"/>
+  <joint name="frame3_br_to_gear_br" type="fixed">
+    <parent link="base_link"/>
     <child  link="frame3_br"/>
     <axis xyz="0 0 1"/>
-    <origin xyz="0 0.02 -0.08" rpy="0 0 0"/>
-    <limit lower="-3.1415" upper="3.1415" effort="30" velocity="10"/>
-    <dybamics damping="10000.0" friction="10000.0" />
+    <origin xyz="-0.23 -0.195 -0.205" rpy="0 0 0"/>
+    <!-- <limit lower="-3.1415" upper="3.1415" effort="30" velocity="10"/>
+    <dybamics damping="10000.0" friction="10000.0" /> -->
   </joint>
-  <transmission name="frame3_br_to_gear_br_trans">
+  <!-- <transmission name="frame3_br_to_gear_br_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="frame3_br_to_gear_br">
-        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
     </joint>
     <actuator name="frame3_br_to_gear_br_motor">
-      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
       <mechanismReduction>1</mechanismReduction>
     </actuator>
-  </transmission>
+  </transmission> -->
   <!--<joint name="frame3_br_to_gear_br" type="fixed">
     <parent link="gear_br"/>
     <child  link="frame3_br"/>
@@ -1241,7 +1282,7 @@
     <mu2 value="2500" />
   </gazebo>
 
-  <joint name="motor_br_to_frame3_br" type="fixed">
+  <!-- <joint name="motor_br_to_frame3_br" type="fixed">
     <parent link="frame3_br"/>
     <child  link="motor_br"/>
     <origin xyz="0 0.02 -0.09" rpy="0 0 0"/>
@@ -1267,12 +1308,12 @@
   </link>
   <gazebo reference="motor_br">
     <material>Gazebo/Grey</material>
-  </gazebo>
+  </gazebo> -->
 
   <joint name="wheel_br_to_motor_br" type="continuous">
-    <parent link="motor_br"/>
+    <parent link="base_link"/>
     <child  link="wheel_br"/>
-    <origin xyz="0 -0.09 0" rpy="0 0 0"/>
+    <origin xyz="-0.23 -0.175 -0.295" rpy="0 0 0"/>
     <!-- <origin xyz="0 -0.15 0" rpy="0 0 0"/> -->
     <axis xyz="0 1 0"/>
     <limit effort="100" velocity="100"/>
@@ -1284,7 +1325,7 @@
         <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
     </joint>
     <actuator name="wheel_br_motor">
-      <!-- <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface> -->
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
       <hardwareInterface>EffortJointInterface</hardwareInterface>
       <mechanismReduction>1</mechanismReduction>
     </actuator>
@@ -1319,39 +1360,54 @@
     <kd value="1.0" />
   </gazebo>
 
+ <!-- virtual wheel -->
+  <joint name="rear_wheel_joint" type="continuous">
+    <parent link="base_link"/>
+    <child  link="rear_wheel_link"/>
+    <origin xyz="-0.23 0.0 -0.295" rpy="0 0 0"/>
+    <!-- <origin xyz="0 -0.15 0" rpy="0 0 0"/> -->
+    <axis xyz="0 1 0"/>
+    <limit effort="100" velocity="100"/>
+    <dynamics damping="0.1" friction="0.0"/> 
+  </joint>
+  <transmission name="rear_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="rear_wheel_joint">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="rear_wheel_joint_motor">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <hardwareInterface>EffortJointInterface</hardwareInterface>
+      <mechanismReduction>1</mechanismReduction>
+    </actuator>
+  </transmission>
+  <link name="rear_wheel_link">
+  <visual>
+      <geometry>
+        <cylinder length="0.09" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <material name="wheel"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder length="0.09" radius="0.1"/>
+      </geometry>
+      <origin xyz="0 0 0" rpy="1.57 0 0"/>
+      <material name="wheel"/>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
+  </link>
+
   <gazebo>
     <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-      <!-- <robotNamespace>/pf1</robotNamespace>
-      <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
-      <legacyModeNS>true</legacyModeNS> -->
-      <!-- <commandTopic>cmd_vel</commandTopic>
-      <odometryTopic>odom</odometryTopic>
-      <odometryFrame>odom</odometryFrame>
-      <leftJoint>wheel_left_joint</leftJoint>
-      <rightJoint>wheel_right_joint</rightJoint> -->
+    <robotSimType>steer_bot_hardware_gazebo/SteerBotHardwareGazebo</robotSimType>
+    <legacyModeNS>false</legacyModeNS>
     </plugin>
   </gazebo>
 
-  <!-- <gazebo>
-    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-      <commandTopic>cmd_vel</commandTopic>
-      <odometryTopic>odom</odometryTopic>
-      <odometryFrame>odom</odometryFrame>
-      <odometrySource>world</odometrySource>
-      <publishOdomTF>true</publishOdomTF>
-      <robotBaseFrame>base_footprint</robotBaseFrame>
-      <publishWheelTF>false</publishWheelTF>
-      <publishTf>true</publishTf>
-      <publishWheelJointState>true</publishWheelJointState>
-      <legacyMode>true</legacyMode>
-      <updateRate>30</updateRate>
-      <leftJoint>wheel_left_joint</leftJoint>
-      <rightJoint>wheel_right_joint</rightJoint>
-      <wheelSeparation>0.160</wheelSeparation>
-      <wheelDiameter>0.066</wheelDiameter>
-      <wheelAcceleration>1</wheelAcceleration>
-      <wheelTorque>10</wheelTorque>
-      <rosDebugLevel>na</rosDebugLevel>
-    </plugin>
-  </gazebo> -->
 </robot>

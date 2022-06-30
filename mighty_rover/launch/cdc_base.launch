@@ -1,21 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-<arg name="model" default="$(find mighty_rover)/xacro/mighty.xacro"/>
+<arg name="model" default="$(find mighty_rover)/xacro/pf1.xacro"/>
 <arg name="rvizconfig" default="$(find mighty_rover)/rviz/up04.rviz"/>
 <!-- <arg name="rvizconfig" default="$(find urdf_tutorial)/rviz/urdf.rviz"/> -->
 
 
-<arg name="robot_name" default="mighty1"/>
+<arg name="robot_name" default="PF1"/>
 <arg name="enable_odom_tf" default="false"/>
 <arg name="init_pose" default=""/>
+<arg name="x" default="0.0"/>
+<arg name="y" default="0.0"/>
+<arg name="z" default="1.0" />
+<arg name="roll" default="0.0"/>
+<arg name="pitch" default="0.0"/>
+<arg name="yaw" default="0.0"/>
+  <!-- these are the arguments you can pass this launch file, for example paused:=true -->
 
 <!--<group ns="$(arg model)">-->
 
 <!-- Launch gazebo -->
-<include file="$(find mighty_rover)/launch/gazebo.launch">
-  <arg name="model" value="$(arg model)"/>
+<include file="$(find gazebo_ros)/launch/empty_world.launch">
+  <!--<arg name="world_name" value="$(find mighty_rover)/worlds/clearpath_playpen.world"/>-->
+  <arg name="world_name" value="$(find mighty_rover)/worlds/pf1_base.world"/>
+  <arg name="debug" value="false" />
+  <arg name="gui" value="true" />
+  <arg name="paused" value="false"/>
+  <arg name="use_sim_time" value="true"/>
+  <arg name="headless" value="false"/>
 </include>
+
+  <!-- Load the URDF into the ROS Parameter Server -->
+
+<param name="robot_description" command="$(find xacro)/xacro.py $(arg model)"/>
 
 <!-- rviz-->
 <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
@@ -26,21 +43,29 @@
 
 <!-- Load joint controller configuration from YAML file to parameter server -->
 
-<rosparam file="$(find mighty_rover)/config/joint_states.yaml" command="load"/>
+<!-- <rosparam file="$(find mighty_rover)/config/joint_states.yaml" command="load"/>
 
-<rosparam file="$(find mighty_rover)/config/diff_drive.yaml" command="load"/>
+<rosparam file="$(find mighty_rover)/config/diff_drive.yaml" command="load"/> -->
 
+  <rosparam file="$(find mighty_rover)/config/ctrl_ackermann_steering_controller.yaml" command="load"  />
+  <rosparam file="$(find mighty_rover)/config/ctrl_gains.yaml" command="load"  />
+  <rosparam file="$(find mighty_rover)/config/ctrl_joint_state_publisher.yaml" command="load"  />
+  <rosparam file="$(find mighty_rover)/config/ctrl_steer_bot_hardware_gazebo.yaml" command="load"  />
 
+        <!-- Spawn the controllers -->
+  <node pkg="controller_manager" type="spawner" name="controller_spawner" 
+        args="joint_state_publisher ackermann_steering_controller"
+        output="screen" respawn="false" />
 
 <!-- load the controllers -->
-<param name="diff_drive_controller/enable_odom_tf" value="$(arg enable_odom_tf)" />
+<!-- <param name="diff_drive_controller/enable_odom_tf" value="$(arg enable_odom_tf)" />
     <param name="diff_drive_controller/base_frame_id" value="base_link" />
-    <param name="diff_drive_controller/odom_frame_id" value="odom" />
+    <param name="diff_drive_controller/odom_frame_id" value="odom" /> -->
 <!--<param name="/$(arg model)/diff_drive_controller/imu_frame_id" value="$(arg model)/imu_link" />-->
 
-<node name="robot_arm_controller_spawner" pkg="controller_manager" type="spawner" respawn="true" output="screen" 
+<!-- <node name="robot_arm_controller_spawner" pkg="controller_manager" type="spawner" respawn="true" output="screen" 
    args="joint_state_controller
-         diff_drive_controller"/>
+         diff_drive_controller"/> -->
 
 <!-- convert joint states to TF transforms for rviz, etc -->
 <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen">
@@ -53,19 +78,19 @@
 
 <!-- steering -->
 <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
-  <param name="default_topic" value="diff_drive_controller/cmd_vel"/> 
+  <param name="default_topic" value="ackermann_steering_controller/cmd_vel"/> 
 </node>
 
 <!--<group ns="Diff_Drive">-->
     <!-- to increase the wheel odometry error -->
-    <param name="diff_drive_controller/wheel_radius" value="0.055" />
+    <!-- <param name="diff_drive_controller/wheel_radius" value="0.055" /> -->
     <!-- robot localization -->
 
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" output="screen">
       <rosparam command="load" file="$(find mighty_rover)/config/ekf_localization/mode1.yaml" />
       <!--<param name="tf_prefix" value="mighty1"/>-->
       <remap from="/odometry/filtered" to="odom" />
-      <remap from="odom0" to="diff_drive_controller/odom" />
+      <remap from="odom0" to="ackermann_steering_controller/odom" />
       <remap from="imu0"  to="imu/data" />
     </node> 
 
@@ -110,12 +135,12 @@
         <rosparam command="load" file="$(arg dwa_param)"/>
         <param name="HZ" value="$(arg hz)"/>
         <param name="USE_SCAN_AS_INPUT" value="$(arg use_scan_as_input)"/>
-        <remap from="/local_map" to="map"/>
+        <!-- <remap from="/local_map" to="map"/> -->
         <remap from="/scan" to="scan"/> 
         <!-- <remap from="/path" to="/nav_path"/> -->
         <remap from="/local_goal" to="move_base_simple/goal"/>
-        <remap from="/cmd_vel" to="diff_drive_controller/cmd_vel"/>
-        <remap from="/odom" to="diff_drive_controller/odom"/>
+        <remap from="/cmd_vel" to="ackermann_steering_controller/cmd_vel"/>
+        <remap from="/odom" to="ackermann_steering_controller/odom"/>
     </node>
 
 <!-- <node pkg="image_proc" type="image_proc" name="image_proc" ns="right"/>
@@ -123,6 +148,12 @@
   <node pkg="stereo_image_proc" type="stereo_image_proc"
         name="stereo_image_proc" args="_approximate_sync:=True" /> -->
  <!--</group>-->
+
+   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+    args="-unpause -urdf -model PF1 -param robot_description
+          -x $(arg x) -y $(arg y) -z $(arg z)
+          -R $(arg roll) -P $(arg pitch) -Y $(arg yaw)"/>
+
 <arg name="paused" default="false"/>
 <arg name="use_sim_time" default="true"/>
 <arg name="gui" default="true"/>

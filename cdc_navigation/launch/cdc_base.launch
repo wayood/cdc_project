@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+<arg name="model" default="$(find cdc_navigation)/xacro/pf1.xacro"/>
+<arg name="rvizconfig" default="$(find cdc_navigation)/rviz/up04.rviz"/>
+<!-- <arg name="rvizconfig" default="$(find urdf_tutorial)/rviz/urdf.rviz"/> -->
+
+
+<arg name="robot_name" default="PF1"/>
+<arg name="enable_odom_tf" default="false"/>
+<arg name="init_pose" default=""/>
+<arg name="x" default="0.0"/>
+<arg name="y" default="0.0"/>
+<arg name="z" default="1.0" />
+<arg name="roll" default="0.0"/>
+<arg name="pitch" default="0.0"/>
+<arg name="yaw" default="0.0"/>
+  <!-- these are the arguments you can pass this launch file, for example paused:=true -->
+
+<!--<group ns="$(arg model)">-->
+
+<!-- Launch gazebo -->
+<include file="$(find gazebo_ros)/launch/empty_world.launch">
+  <!--<arg name="world_name" value="$(find cdc_navigation)/worlds/clearpath_playpen.world"/>-->
+  <arg name="world_name" value="$(find cdc_navigation)/worlds/pf1_base.world"/>
+  <arg name="debug" value="false" />
+  <arg name="gui" value="true" />
+  <arg name="paused" value="false"/>
+  <arg name="use_sim_time" value="true"/>
+  <arg name="headless" value="false"/>
+</include>
+
+  <!-- Load the URDF into the ROS Parameter Server -->
+
+<param name="robot_description" command="$(find xacro)/xacro.py $(arg model)"/>
+
+<!-- rviz-->
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
+
+
+<!-- <node name="tf_broadcast" pkg="cdc_navigation" type="tf_broadcast"/>
+<node name="tf_listen" pkg="cdc_navigation" type="tf_listen"/> -->
+
+  <rosparam file="$(find cdc_navigation)/config/ctrl_ackermann_steering_controller.yaml" command="load"  />
+  <rosparam file="$(find cdc_navigation)/config/ctrl_gains.yaml" command="load"  />
+  <rosparam file="$(find cdc_navigation)/config/ctrl_joint_state_publisher.yaml" command="load"  />
+  <rosparam file="$(find cdc_navigation)/config/ctrl_steer_bot_hardware_gazebo.yaml" command="load"  />
+
+        <!-- Spawn the controllers -->
+  <node pkg="controller_manager" type="spawner" name="controller_spawner" 
+        args="joint_state_publisher ackermann_steering_controller"
+        output="screen" respawn="false" />
+
+
+
+<!-- convert joint states to TF transforms for rviz, etc -->
+<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen"/>
+
+
+<node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
+  <param name="default_topic" value="ackermann_steering_controller/cmd_vel"/> 
+</node>
+
+
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" output="screen">
+      <rosparam command="load" file="$(find cdc_navigation)/config/mode1.yaml" />
+      <!--<param name="tf_prefix" value="mighty1"/>-->
+      <remap from="/odometry/filtered" to="odom" />
+      <remap from="odom0" to="ackermann_steering_controller/odom" />
+      <remap from="imu0"  to="imu/data" />
+    </node> 
+
+
+
+    <!--map-->
+    <node pkg="map_server" name="map_server" type="map_server" args="$(find cdc_navigation)/map/cdc_base.yaml"/>
+
+     <!-- amcl -->
+    <node pkg="amcl" type="amcl" name="amcl" clear_params="true">
+      <rosparam command="load" file="$(find cdc_navigation)/config/amcl.yaml" />
+      <param name="base_frame_id" value="base_link" />
+      <param name="odom_frame_id" value="odom" />
+      <param name="global_frame_id" value="map" />
+      <remap from="scan" to="scan" />
+    </node>
+    
+<!-- feture object detection -->
+    <node name="saliencymapVOCUS2" pkg="visual_saliency" type="saliencyDetectionVOCUS2" output="screen">
+		  <remap from="/rgbimage_in" to="/camera/color/image_raw" />
+		  <remap from="/saliency/image" to="/saliency/image" />
+      <param name="image_resize_percent" type="double" value="0.25"/>
+      <param name="threshold_percent" type="double" value="0.05" />
+      <param name="topcut_enable" type="bool" value="false" />
+      <param name="topcut_pixels" type="int" value="0" />
+      <param name="time_show" type="bool" value="true" />
+    </node>
+
+    <!-- global plan-->
+    <!-- <node pkg="astar" type="astar" name="astar" output="screen" respawn="false">
+        <param name="Euclidean" value="true"/>
+        <param name="OccupyThresh" value="-1"/>
+        <param name="InflateRadius" value="0.25"/>
+        <param name="rate" value="50"/>
+    </node> -->
+
+    <!--local plan-->
+    <arg name="hz" default="5"/>
+    <arg name="use_scan_as_input" default="true"/>
+    <arg name="robot_param" default="$(find cdc_navigation)/config/robot_param.yaml"/>
+    <arg name="dwa_param" default="$(find cdc_navigation)/config/dwa_param.yaml"/> 
+    
+   <node pkg="dwa_planner" type="dwa_planner" name="dwa_planner" >
+        <rosparam command="load" file="$(arg robot_param)"/>
+        <rosparam command="load" file="$(arg dwa_param)"/>
+        <param name="HZ" value="$(arg hz)"/>
+        <param name="USE_SCAN_AS_INPUT" value="$(arg use_scan_as_input)"/>
+        <!-- <remap from="/local_map" to="map"/> -->
+        <remap from="/scan" to="scan"/> 
+        <!-- <remap from="/path" to="/nav_path"/> -->
+        <remap from="/local_goal" to="move_base_simple/goal"/>
+        <remap from="/cmd_vel" to="ackermann_steering_controller/cmd_vel"/>
+        <remap from="/odom" to="ackermann_steering_controller/odom"/>
+    </node>
+
+<!-- <node pkg="image_proc" type="image_proc" name="image_proc" ns="right"/>
+<node pkg="image_proc" type="image_proc" name="image_proc" ns="left"/>
+  <node pkg="stereo_image_proc" type="stereo_image_proc"
+        name="stereo_image_proc" args="_approximate_sync:=True" /> -->
+ <!--</group>-->
+
+   <node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+    args="-unpause -urdf -model PF1 -param robot_description
+          -x $(arg x) -y $(arg y) -z $(arg z)
+          -R $(arg roll) -P $(arg pitch) -Y $(arg yaw)"/>
+
+<arg name="paused" default="false"/>
+<arg name="use_sim_time" default="true"/>
+<arg name="gui" default="true"/>
+<arg name="headless" default="false"/>
+<arg name="debug" default="false"/>
+
+
+</launch>

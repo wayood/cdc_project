@@ -1,0 +1,5 @@
+<library path="lib/libwaypoint_generator">
+  <class name="rviz/Waypoint_generate" type="rviz::Waypoint_generate" base_class_type="rviz::Tool">
+    <description>put sample initial pose</description>
+  </class>
+</library>

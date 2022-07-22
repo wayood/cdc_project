@@ -1,128 +1,138 @@
 #include "middle_planner/middle_plan.h"
 
 CDCPlanner::CDCPlanner(void)
-    :path_subscribed(false),lm_x_subscribed(false),lm_y_subscribed(false)
+:wp_flag(false),lm_flag(false)
 {
-    path_sub = nh.subscribe("/nav_path",1,&CDCPlanner::path_callback,this);
-    lm_x_sub = nh.subscribe("/lm_position_x",1,&CDCPlanner::lm_x_callback,this);
-    lm_y_sub = nh.subscribe("/lm_position_y",1,&CDCPlanner::lm_y_callback,this);
-    path_pub = nh.advertise<nav_msgs::Path>("middle_path", 10);
+    wp_init_sub = nh.subscribe("/waypoint",1,&CDCPlanner::wp_callback,this);
+    lm_sub = nh.subscribe("/lm_position",1,&CDCPlanner::lm_callback,this);
+    wp_pub = nh.advertise<waypoint_generator::Waypoint_array>("waypoint_new", 1);
+    marker_pub = nh.advertise<visualization_msgs::Marker>("marker", 1);
 }
 
-void CDCPlanner::path_callback(const nav_msgs::Path& msg)
+
+void CDCPlanner::wp_callback(const waypoint_generator::Waypoint_array& msg)
 {
-    path = msg;
-    path_subscribed = true;
-    ROS_INFO("sucess path");    
+    wp_array_subscribe = msg;
+    wp_flag = true;
 }
 
-void CDCPlanner::lm_x_callback(const std_msgs::Float32MultiArray::ConstPtr& msg)
+void CDCPlanner::lm_callback(const lm_detection::Position_array& msg)
 {
-    num = msg->data.size();
-    
-    for (int i = 0; i < num ; i++){
-        lm_x[i] = msg->data[i];
-    }
-    lm_x_subscribed = true;
-    ROS_INFO("sucess lm_x");
-    return;
-    
-}
-
-void CDCPlanner::lm_y_callback(const std_msgs::Float32MultiArray::ConstPtr& msg)
-{
-    num = msg->data.size();
-    
-    for (int i = 0; i < num ; i++){
-        lm_y[i] = msg->data[i];
-    }
-    lm_y_subscribed  = true;
-    ROS_INFO("sucess lm_y");
-    return;
+    lm_array = msg;
+    lm_flag = true;
 }
 
 void CDCPlanner::process(void)
 {
     ros::Rate loop_rate(10);
-    int i = 0;
-    Eigen::MatrixXf wp;
-    Eigen::MatrixXf lm_sub_first = Eigen::MatrixXf::Ones(3,100);
+    int first_flag = 0;
+    ROS_INFO("       middle plan start        ");
+    ROS_INFO("================================");
     while(ros::ok()){
-        ROS_INFO("middle plan start");
-        if(i == 0 && lm_x_subscribed && lm_y_subscribed)
-        {
-            lm_sub_first.conservativeResize(3,num);
-            prepare(lm_sub_first);
-            i++;
+        if(wp_flag && lm_flag){
+            if(first_flag == 0)
+            {
+                prepare();
+                if(wp_first.cols() > 0 && LM_first.cols() > 2){
+                    first_flag = 1;
+                }
+            }
+            std::cout << "LM initial size => " << LM_first.cols() << std::endl;
+            std::cout << "WayPoint initial size => " << wp_first.cols() << std::endl;
+            if(first_flag == 1)
+            {
+                LM_current = Eigen::MatrixXd::Ones(3,lm_array.position.size());
+                for (int i = 0; i < lm_array.position.size(); i++){
+                    LM_current(0,i) = lm_array.position[i].x;
+                    LM_current(1,i) = lm_array.position[i].y;
+                    ROS_INFO("lm_current get!! %f %f ",LM_current(0,i),LM_current(1,i));
+                }
+                
 
-        }
-        else if(lm_x[0] != 0 && lm_y[0] != 0 && i == 1 && path_subscribed)
-        {
-            Eigen::MatrixXf lm_sub_current = Eigen::MatrixXf::Ones(3,num);
-            prepare(lm_sub_current);
-            Eigen::MatrixXf A = a_mat(lm_sub_first,lm_sub_current);
-            wp = CDC_plan(path,A);
-            CDC_publish(path,wp);
+                if(LM_current.cols() == LM_first.cols()){
+                    ROS_ERROR("calucurate A Matrix !!");
+                    wp_new = A_matrix(LM_first,LM_current,wp_first);
+                    WP_publish(wp_new);
+                }
+                
+            }
+            
+            
         }
         ros::spinOnce();
         loop_rate.sleep();
     }
 }
 
-void CDCPlanner::prepare(Eigen::MatrixXf& lm)
+void CDCPlanner::prepare(void)
 {
-    for (int i = 0 ; i < lm.cols() ; i++){
-        lm(0,i) = lm_x[i];
-        lm(1,i) = lm_y[i];
+    wp_first = Eigen::MatrixXd::Ones(3,wp_array_subscribe.wp.size());
+    for (int i = 0;i<wp_array_subscribe.wp.size();i++){
+        wp_first(0,i) = wp_array_subscribe.wp[i].x;
+        wp_first(1,i) = wp_array_subscribe.wp[i].y;
+        // ROS_INFO("wp_init get!! %f %f ",wp_first(0,i),wp_first(1,i));
+    }
+
+    LM_first = Eigen::MatrixXd::Ones(3,lm_array.position.size());
+    for (int i = 0;i<lm_array.position.size();i++){
+        LM_first(0,i) = lm_array.position[i].x;
+        LM_first(1,i) = lm_array.position[i].y;
+        // ROS_INFO("lm_first get!! %f %f ",LM_first(0,i),LM_first(1,i));
     }
     return;
 }
 
-Eigen::MatrixXf CDCPlanner::a_mat(Eigen::MatrixXf& lm_first,Eigen::MatrixXf& lm_current)
+Eigen::MatrixXd CDCPlanner::A_matrix(const Eigen::MatrixXd& lm_first,const Eigen::MatrixXd& lm_current,const Eigen::MatrixXd& wp_first)
 {
-    Eigen::MatrixXf A;
-    Eigen::MatrixXf pinv = lm_first.completeOrthogonalDecomposition().pseudoInverse();
-    A = lm_current * pinv;
-    return A;
+    Eigen::MatrixXd A;
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(lm_first,Eigen::ComputeThinU | Eigen::ComputeThinV);
+    Eigen::VectorXd s = svd.singularValues();
+    s = s.array().inverse();
+    Eigen::MatrixXd lm_first_inverse = svd.matrixV() * s.asDiagonal() * svd.matrixU().transpose();
+    A = lm_current * lm_first_inverse;
+    wp_new =  A * wp_first;
+    ROS_ERROR("return New Waypoint !!");
+    return wp_new;
 }
 
-Eigen::MatrixXf CDCPlanner::CDC_plan(const nav_msgs::Path& path,Eigen::MatrixXf& A)
+void CDCPlanner::WP_publish(Eigen::MatrixXd& wp_new)
 {
-    Eigen::MatrixXf wp_matrix(3,sizeof(path.poses));
-    Eigen::MatrixXf new_wp_matrix(3,sizeof(path.poses));
-    for (int i = 0;i < sizeof(path.poses);i++){
-        wp_matrix(0,i) = path.poses[i].pose.position.x;
-        wp_matrix(1,i) = path.poses[i].pose.position.y;
-        wp_matrix(2,i) = 1;
-    }
-    ROS_INFO("pseudo_INVERSE");
-    new_wp_matrix = A * wp_matrix;
-    return new_wp_matrix;
-}
+    for (int i = 0;i < wp_new.cols();i++){
+        wp.header.frame_id = "map";
+        wp.header.stamp = ros::Time::now();
+        wp.header.seq = i;
+        wp.x = wp_new(0,i);
+        wp.y = wp_new(1,i);
+        wp_array_publish.wp.push_back(wp);
 
-void CDCPlanner::CDC_publish(const nav_msgs::Path& path,Eigen::MatrixXf& wp)
-{
-    std_msgs::Header path_header;
-    path_header = path.poses[0].header;
-    path_header.seq = 0;
-    path_header.stamp = ros::Time::now();
-    path_header.frame_id = "map";
-    middle_path.header = path_header;
-    middle_path.poses = path.poses;
-    for (int i = 0;i< sizeof(path.poses);i++){
-        std::cout << middle_path.poses[i].pose.position.x << std::endl;
-        middle_path.poses[i].pose.position.x = wp(0,i); 
-        std::cout << middle_path.poses[i].pose.position.x << std::endl;
-        middle_path.poses[i].pose.position.y = wp(1,i); 
-        middle_path.poses[i].pose.position.z = path.poses[i].pose.position.z; 
-        middle_path.poses[i].pose.orientation.x = path.poses[i].pose.orientation.x;
-        middle_path.poses[i].pose.orientation.y = path.poses[i].pose.orientation.y;
-        middle_path.poses[i].pose.orientation.z = path.poses[i].pose.orientation.z;
-        middle_path.poses[i].pose.orientation.w = path.poses[i].pose.orientation.w;
-        middle_path.poses[i].header = path.poses[i].header;
-        middle_path.poses[i].header.seq = i;
+        visualization_msgs::Marker marker;
+        marker.header.frame_id = "map";
+        marker.header.stamp = ros::Time::now();
+        marker.ns = "basic_shapes";
+        marker.id = i;
+        marker.type = visualization_msgs::Marker::CUBE;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.lifetime = ros::Duration();
+
+        marker.scale.x = 0.5;
+        marker.scale.y = 0.5;
+        marker.scale.z = 0.2;
+        marker.pose.position.x = wp_new(0,i);
+        marker.pose.position.y = wp_new(1,i);
+        marker.pose.position.z = 0;
+        marker.pose.orientation.x = 0;
+        marker.pose.orientation.y = 0;
+        marker.pose.orientation.z = 0;
+        marker.pose.orientation.w = 1;
+        marker.color.r = 0.0f;
+        marker.color.g = 1.0f;
+        marker.color.b = 0.0f;
+        marker.color.a = 1.0f;
+        marker_pub.publish(marker);
+
     }
-    path_pub.publish(middle_path);
+    ROS_ERROR("Publish New Waypoint !!");  
+    wp_pub.publish(wp_array_publish);
 }
 
 int main(int argc, char** argv)

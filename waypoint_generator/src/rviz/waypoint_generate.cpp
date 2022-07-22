@@ -49,6 +49,9 @@
    std_dev_x_->setMin(0);
    std_dev_y_->setMin(0);
    std_dev_theta_->setMin(0);
+   QTimer* output_timer = new QTimer( this );
+   connect( output_timer, SIGNAL( timeout() ), this, SLOT( Loop_publish() ));
+   output_timer->start( 100 );
 
  }
  
@@ -71,9 +74,17 @@
      ROS_ERROR_STREAM_NAMED("Waypoint_generate", e.what());
    }
  }
- 
+ void Waypoint_generate::Loop_publish()
+ {
+    ros::Rate loop_rate(10);
+    
+    if(ros::ok()){
+      pub_.publish(wp_array);
+    }
+ }
  void Waypoint_generate::onPoseSet(double x, double y, double theta)
  {
+  
    std::string fixed_frame = context_->getFixedFrame().toStdString();
    wp.header.frame_id = fixed_frame;
    wp.header.stamp = ros::Time::now();
@@ -81,18 +92,14 @@
    wp.x = x;
    wp.y = y;
    wp_array.wp.push_back(wp);
-   count += 1;
-  //  tf::Quaternion quat;
-  //  quat.setRPY(0.0, 0.0, theta);
-  //  tf::quaternionTFToMsg(quat, pose.pose.pose.orientation);
-  //  pose.pose.covariance[6 * 0 + 0] = std::pow(std_dev_x_->getFloat(), 2);
-  //  pose.pose.covariance[6 * 1 + 1] = std::pow(std_dev_y_->getFloat(), 2);
-  //  pose.pose.covariance[6 * 5 + 5] = std::pow(std_dev_theta_->getFloat(), 2);
-   ROS_INFO("wp: %.3f %.3f %.3f [frame=%s]", x, y, theta, fixed_frame.c_str());
-   pub_.publish(wp_array);
+  //  pub_.publish(wp_array);
+   count += 1; 
+   ROS_ERROR("wp: %.3f %.3f %.3f [frame=%s]", x, y, theta, fixed_frame.c_str());
+   
  }
+
+ 
  
  } // end namespace rviz
- 
  #include <pluginlib/class_list_macros.hpp>
  PLUGINLIB_EXPORT_CLASS(rviz::Waypoint_generate, rviz::Tool)

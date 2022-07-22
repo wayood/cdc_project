@@ -195,16 +195,11 @@ void depth_estimater::main(){
                 std::ostringstream st;
                 st << i;
                 LM_position_st = LM_position_st + st.str();
-                LM_position.header.frame_id = LM_position_st;
-                LM_position.header.stamp = ros::Time::now();
-                LM_position.x = LM_point[i][0];
-                LM_position.y = LM_point[i][1];
-                LM_position.z = sum_depth[i];
-                LM_position_array.position.push_back(LM_position);
+                
                 Eigen::Vector3d LM;
-                LM << LM_position.x-cx,LM_position.y-cy,1.0;
+                LM << LM_point[i][0]-cx,LM_point[i][1]-cy,1.0;
                 Eigen::Vector3d LM_;
-                LM_ = LM * LM_position.z;
+                LM_ = LM * sum_depth[i];
                 Eigen::Vector3d LM_trans;   
                 LM_trans = K_inv * LM_;
 
@@ -240,6 +235,13 @@ void depth_estimater::main(){
                         ros::Duration(1.0).sleep();
                         continue;
                 }
+                auto& map_to_depth_transform = lookuptransformStamped.transform.translation;
+                LM_position.header.frame_id = LM_position_st;
+                LM_position.header.stamp = ros::Time::now();
+                LM_position.x = map_to_depth_transform.x;
+                LM_position.y = map_to_depth_transform.y;
+                LM_position.z = map_to_depth_transform.z;
+                LM_position_array.position.push_back(LM_position);
             }
 
             LM_pub.publish(LM_position_array);

@@ -13,6 +13,10 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   tf
+  tf2
+  tf2_ros
+  waypoint_generator
+  lm_detection
 )
 
 ## System dependencies are found with CMake's conventions
@@ -135,7 +139,7 @@ target_link_libraries(middle_plan
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(middle_plan ${middle_plan_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context

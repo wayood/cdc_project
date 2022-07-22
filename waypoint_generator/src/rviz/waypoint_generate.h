@@ -36,6 +36,7 @@
  #include <ros/ros.h>
  #include<waypoint_generator/Waypoint.h>
  #include<waypoint_generator/Waypoint_array.h>
+ #include <QTimer>
  #include "rviz/default_plugin/tools/pose_tool.h"
  #endif
  
@@ -48,10 +49,12 @@
  
  class Waypoint_generate : public PoseTool
  {
+ 
    Q_OBJECT
  public:
    waypoint_generator::Waypoint wp;
    waypoint_generator::Waypoint_array wp_array;
+   
    int count;
    Waypoint_generate();
    ~Waypoint_generate() override
@@ -63,10 +66,10 @@
  
  protected:
    void onPoseSet(double x, double y, double theta) override;
- 
- private Q_SLOTS:
+ protected Q_SLOTS:
    void updateTopic();
- 
+   void Loop_publish();
+   
  private:
    ros::NodeHandle nh_;
    ros::Publisher pub_;

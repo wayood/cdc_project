@@ -34,6 +34,7 @@
  #include <QObject>
  
  #include <ros/ros.h>
+ #include <visualization_msgs/Marker.h>
  #include<waypoint_generator/Waypoint.h>
  #include<waypoint_generator/Waypoint_array.h>
  #include <QTimer>
@@ -73,6 +74,7 @@
  private:
    ros::NodeHandle nh_;
    ros::Publisher pub_;
+   ros::Publisher marker_pub_;
 
    FloatProperty* std_dev_x_;
    FloatProperty* std_dev_y_;

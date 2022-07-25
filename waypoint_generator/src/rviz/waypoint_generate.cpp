@@ -68,6 +68,7 @@
    try
    {
      pub_ = nh_.advertise<waypoint_generator::Waypoint_array>("waypoint", 1);
+     marker_pub_ = nh_.advertise<visualization_msgs::Marker>("waypoint_first", 1);
    }
    catch (const ros::Exception& e)
    {
@@ -92,7 +93,30 @@
    wp.x = x;
    wp.y = y;
    wp_array.wp.push_back(wp);
-  //  pub_.publish(wp_array);
+   visualization_msgs::Marker marker;
+   marker.header.frame_id = "map";
+   marker.header.stamp = ros::Time::now();
+   marker.ns = "waypoint_first";
+   marker.id = count;
+   marker.type = visualization_msgs::Marker::CYLINDER;
+   marker.action = visualization_msgs::Marker::ADD;
+   marker.lifetime = ros::Duration();
+
+   marker.scale.x = 0.1;
+   marker.scale.y = 0.1;
+   marker.scale.z = 0.2;
+   marker.pose.position.x = x;
+   marker.pose.position.y = y;
+   marker.pose.position.z = 0;
+   marker.pose.orientation.x = 0;
+   marker.pose.orientation.y = 0;
+   marker.pose.orientation.z = 0;
+   marker.pose.orientation.w = 1;
+   marker.color.r = 0.0f;
+   marker.color.g = 1.0f;
+   marker.color.b = 0.0f;
+   marker.color.a = 1.0f;
+   marker_pub_.publish(marker);
    count += 1; 
    ROS_ERROR("wp: %.3f %.3f %.3f [frame=%s]", x, y, theta, fixed_frame.c_str());
    

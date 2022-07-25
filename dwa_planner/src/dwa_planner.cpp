@@ -81,7 +81,6 @@ void DWAPlanner::local_goal_callback(const geometry_msgs::PoseStampedConstPtr& m
 {
     local_goal_struct = *msg;
     try{
-        // listener.transformPose(local_goal.header.frame_id, ros::Time(0), local_goal, ROBOT_FRAME, local_goal);
         local_goal_subscribed = true;
         ROS_INFO("sucess goal");
     }catch(tf::TransformException ex){
@@ -199,7 +198,7 @@ void DWAPlanner::process(void)
             listener.transformPose(ROBOT_FRAME, ros::Time(0),local_goal_struct,local_goal_struct.header.frame_id,local_goal);
             Eigen::Vector3d goal(local_goal.pose.position.x, local_goal.pose.position.y, tf::getYaw(local_goal.pose.orientation));
             ROS_INFO_STREAM("local goal: (" << goal[0] << "," << goal[1] << "," << goal[2]/M_PI*180 << ")");
-            ROS_FATAL("norm -> x:%f y:%f",goal(0),goal(1));
+            // ROS_FATAL("norm -> x:%f y:%f",goal(0),goal(1));
             geometry_msgs::Twist cmd_vel;
             if(goal.segment(0, 2).norm() > GOAL_THRESHOLD){
                 std::vector<std::vector<float>> obs_list;

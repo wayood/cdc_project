@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  nav_msgs
+  waypoint_generator
 )
 
 ## System dependencies are found with CMake's conventions
@@ -103,7 +105,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+ INCLUDE_DIRS include
 #  LIBRARIES cdc_navigation
 #  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
@@ -116,10 +118,16 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
+add_executable(navigation_controller src/navigation_controller.cpp)
+target_link_libraries(navigation_controller
+  ${catkin_LIBRARIES}
+)
+
+add_dependencies(navigation_controller ${cdc_navigation_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/cdc_navigation.cpp

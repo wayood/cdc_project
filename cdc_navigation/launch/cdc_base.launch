@@ -15,7 +15,6 @@
 <arg name="roll" default="0.0"/>
 <arg name="pitch" default="0.0"/>
 <arg name="yaw" default="0.0"/>
-  <!-- these are the arguments you can pass this launch file, for example paused:=true -->
 
 <!--<group ns="$(arg model)">-->
 
@@ -121,6 +120,8 @@
         <remap from="/cmd_vel" to="ackermann_steering_controller/cmd_vel"/>
         <remap from="/odom" to="ackermann_steering_controller/odom"/>
     </node>
+
+    <node pkg="lm_detection" type="lm_detection" name="lm_detection"/>
 
 <!-- <node pkg="image_proc" type="image_proc" name="image_proc" ns="right"/>
 <node pkg="image_proc" type="image_proc" name="image_proc" ns="left"/>

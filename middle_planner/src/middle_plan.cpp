@@ -6,7 +6,7 @@ CDCPlanner::CDCPlanner(void)
     wp_init_sub = nh.subscribe("/waypoint",1,&CDCPlanner::wp_callback,this);
     lm_sub = nh.subscribe("/lm_position",1,&CDCPlanner::lm_callback,this);
     wp_pub = nh.advertise<waypoint_generator::Waypoint_array>("waypoint_new", 1);
-    marker_pub = nh.advertise<visualization_msgs::Marker>("marker", 1);
+    marker_pub = nh.advertise<visualization_msgs::Marker>("waypoint_new", 1);
 }
 
 
@@ -108,14 +108,14 @@ void CDCPlanner::WP_publish(Eigen::MatrixXd& wp_new)
         visualization_msgs::Marker marker;
         marker.header.frame_id = "map";
         marker.header.stamp = ros::Time::now();
-        marker.ns = "basic_shapes";
+        marker.ns = "waypoint_new";
         marker.id = i;
-        marker.type = visualization_msgs::Marker::CUBE;
+        marker.type = visualization_msgs::Marker::CYLINDER;
         marker.action = visualization_msgs::Marker::ADD;
         marker.lifetime = ros::Duration();
 
-        marker.scale.x = 0.5;
-        marker.scale.y = 0.5;
+        marker.scale.x = 0.1;
+        marker.scale.y = 0.1;
         marker.scale.z = 0.2;
         marker.pose.position.x = wp_new(0,i);
         marker.pose.position.y = wp_new(1,i);
@@ -124,8 +124,8 @@ void CDCPlanner::WP_publish(Eigen::MatrixXd& wp_new)
         marker.pose.orientation.y = 0;
         marker.pose.orientation.z = 0;
         marker.pose.orientation.w = 1;
-        marker.color.r = 0.0f;
-        marker.color.g = 1.0f;
+        marker.color.r = 1.0f;
+        marker.color.g = 0.0f;
         marker.color.b = 0.0f;
         marker.color.a = 1.0f;
         marker_pub.publish(marker);

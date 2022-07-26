@@ -27,10 +27,10 @@
 
 
     <!-- base_footprint-->
-  <!-- <link name="base_footprint"/>
-  <gazebo reference="body_footprint"/>
+  <!-- <link name="base_footprint"/> -->
+  <!-- <gazebo reference="body_footprint"/> -->
 
-  <joint name="base_joint" type="fixed">
+  <!-- <joint name="base_joint" type="fixed">
     <parent link="base_footprint"/>
     <child link="base_link"/>
     <origin xyz="0.0 0.0 0.47" rpy="0 0 0"/>

@@ -48,12 +48,12 @@
         <!-- Spawn the controllers -->
   <node pkg="controller_manager" type="spawner" name="controller_spawner" 
         args="joint_state_publisher ackermann_steering_controller"
-        output="screen" respawn="false" />
+        respawn="false" />
 
 
 
 <!-- convert joint states to TF transforms for rviz, etc -->
-<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false" output="screen"/>
+<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false"/>
 
 
 <node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
@@ -61,7 +61,7 @@
 </node>
 
 
-    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" output="screen">
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" >
       <rosparam command="load" file="$(find cdc_navigation)/config/mode1.yaml" />
       <remap from="/odometry/filtered" to="odom" />
       <remap from="odom0" to="ackermann_steering_controller/odom" />
@@ -69,7 +69,7 @@
     </node> 
 
 
-<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" 
     args="-unpause -urdf -model PF1 -param robot_description
           -x $(arg x) -y $(arg y) -z $(arg z)
           -R $(arg roll) -P $(arg pitch) -Y $(arg yaw)"/>
@@ -89,8 +89,8 @@
     <param name="to_frame" type="string" value="base_link"/>
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" output="screen"/>
-  <node pkg="nodelet" type="nodelet" name="voxel_grid" args="load pcl/VoxelGrid pcl_manager" output="screen">
+  <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" />
+  <node pkg="nodelet" type="nodelet" name="voxel_grid" args="load pcl/VoxelGrid pcl_manager" >
     <remap from="~input" to="/camera/depth/color/points"/>
     <remap from="~output" to="/camera/depth/points_downsampled"/>
     <rosparam>
@@ -102,7 +102,7 @@
     </rosparam>
   </node>
 
-  <node pkg="elevation_mapping" type="elevation_mapping" name="elevation_mapping" output="screen">
+  <node pkg="elevation_mapping" type="elevation_mapping" name="elevation_mapping">
     <remap from="/points" to="/camera/depth/points_downsampled" /> 
     <rosparam command="load" file="$(find elevation_mapping)/config/sensor_processors/robot_param.yaml"/>
     <rosparam command="load" file="$(find elevation_mapping)/config/sensor_processors/postprocessor_pipeline.yaml"/>
@@ -144,7 +144,7 @@
         <remap from="/odom" to="ackermann_steering_controller/odom"/>
     </node>
 
-    <node pkg="lm_detection" type="lm_detection" name="lm_detection"/>
+    <node pkg="lm_detection" type="lm_detection" name="lm_detection" output="screen"/>
 
 <arg name="paused" default="false"/>
 <arg name="use_sim_time" default="true"/>

@@ -16,9 +16,11 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   cv_bridge
   message_generation
+  image_geometry
 )
 
 find_package(Eigen3 REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system)
 find_package(OpenCV REQUIRED)
 
 add_message_files(
@@ -78,10 +80,11 @@ include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 add_executable(lm_detection src/LM_detection.cpp)
-target_link_libraries(lm_detection ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(lm_detection ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${Boost_LIBRARIES})
 
 #############
 ## Install ##

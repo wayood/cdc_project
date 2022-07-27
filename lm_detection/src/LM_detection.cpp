@@ -4,20 +4,22 @@
 #include <opencv2/opencv.hpp>
 #include <image_transport/image_transport.h>
 #include <iostream>
-#include <std_msgs/Float32MultiArray.h>
+#include <message_filters/time_synchronizer.h>
 #include <std_msgs/Header.h>
-#include<vector>
-#include<string>
-#include<lm_detection/Position.h>
-#include<lm_detection/Position_array.h>
+#include <vector>
+#include <image_geometry/pinhole_camera_model.h>
+#include <string>
+#include <message_filters/subscriber.h>
+#include <lm_detection/Position.h>
+#include <lm_detection/Position_array.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2/LinearMath/Quaternion.h>
-#include<math.h>
+#include <math.h>
 #include <sstream>
-#include <typeinfo>
 #include <Eigen/Dense>
 #include <Eigen/Core>
 #include <Eigen/LU>
@@ -28,8 +30,9 @@ public:
     ~depth_estimater();
     void rgbImageCallback(const sensor_msgs::ImageConstPtr& msg);
     void depthImageCallback(const sensor_msgs::ImageConstPtr& msg);
+    void camera_info_callback(const sensor_msgs::ImageConstPtr& rgb_msg,const sensor_msgs::ImageConstPtr& depth_msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
     void main();
-    cv::Point dot_P;
+    cv::Point2d LM_position_raw_data;
     tf2_ros::TransformBroadcaster dynamic_br_;
     tf2_ros::Buffer tfBuffer;
     std::vector<std::vector <double>> LM_point;
@@ -37,12 +40,12 @@ public:
     lm_detection::Position_array LM_position_array;
     lm_detection::Position LM_position;
     cv_bridge::CvImagePtr cv_ptr_depth;
+    image_geometry::PinholeCameraModel cam_model;
     std::vector<int> sum_depth;
     bool flag_depth = false;
     bool flag_bbox = false;
-    std_msgs::Float32MultiArray array;
+    bool camera_info_flag = false;
     ros::Publisher LM_pub;
-    
     // tf::TransformListener listener;
 private:
     ros::NodeHandle nh;
@@ -58,7 +61,11 @@ depth_estimater::depth_estimater(){
  
 depth_estimater::~depth_estimater(){
 }
- 
+void depth_estimater::camera_info_callback(const sensor_msgs::ImageConstPtr& rgb_msg,const sensor_msgs::ImageConstPtr& depth_msg,const sensor_msgs::CameraInfoConstPtr& cam_info){
+    std::cout << "Sucsess !!" << std::endl;
+    camera_info_flag = true;
+    cam_model.fromCameraInfo(cam_info);
+}
 void depth_estimater::rgbImageCallback(const sensor_msgs::ImageConstPtr& msg){
  
 
@@ -111,12 +118,10 @@ void depth_estimater::rgbImageCallback(const sensor_msgs::ImageConstPtr& msg){
         BBox_rectangle[count][1] = int(r.y*1.5);
         BBox_rectangle[count][2] = int((r.x+r.width)*2);
         BBox_rectangle[count][3] = int((r.y+r.height)*1.5);
-        dot_P.x = r.x+r.width/2;
-        dot_P.y = r.y+r.height/2;
         LM_point[count][0] = (r.x+r.width/2)*2;
         LM_point[count][1] = (r.y+r.height/2)*1.5;
         count += 1;
-        cv::circle(overlay_image_1, dot_P, dot_r, cv::Scalar(0, 0, 255), -1, cv::LINE_AA);
+        cv::circle(overlay_image_1, LM_position_raw_data, dot_r, cv::Scalar(0, 0, 255), -1, cv::LINE_AA);
     }
     flag_bbox = true;
     
@@ -138,8 +143,6 @@ void depth_estimater::depthImageCallback(const sensor_msgs::ImageConstPtr& msg){
     sum_depth.resize(BBox_rectangle.size());
     flag_depth = false;
     int sum_count = 1;
-    // double max_range_ = 20;
-    // double min_range_ = 0.5;
     for(int count = 0;count < BBox_rectangle.size();count++){
         for(int i = 0; i < cv_ptr_depth->image.rows; i++)
         {
@@ -165,8 +168,8 @@ void depth_estimater::depthImageCallback(const sensor_msgs::ImageConstPtr& msg){
     cv::Mat img_1 = cv::Mat::zeros(500, 500, CV_8UC3);
     cv::Mat overlay_image;
     cv_ptr_depth->image.copyTo(overlay_image);
-    cv::circle(overlay_image, dot_P, 2, cv::Scalar(255, 0, 0), -1, cv::LINE_AA);
-    cv::circle(img_1, dot_P, 2, cv::Scalar(255, 0, 0), -1, cv::LINE_AA);
+    cv::circle(overlay_image, LM_position_raw_data, 2, cv::Scalar(255, 0, 0), -1, cv::LINE_AA);
+    cv::circle(img_1, LM_position_raw_data, 2, cv::Scalar(255, 0, 0), -1, cv::LINE_AA);
     
     cv::imshow("Depth image", overlay_image);
     cv::waitKey(1);
@@ -174,50 +177,37 @@ void depth_estimater::depthImageCallback(const sensor_msgs::ImageConstPtr& msg){
 
 void depth_estimater::main(){
     ros::Rate loop_rate(10);
-    
+    message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh,"/saliency/image", 1);
+    message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh,"/camera/depth/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::CameraInfo> camera_info_sub(nh,"/camera/depth/camera_info",1);
+    message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image,sensor_msgs::CameraInfo> sync(rgb_sub, depth_sub, camera_info_sub, 10);
+    sync.registerCallback(boost::bind(&depth_estimater::camera_info_callback, this, _1, _2, _3));
     while(false == ros::isShuttingDown()){
         
-        if(flag_depth && flag_bbox && sum_depth.size() > 0){
+        if(flag_depth && flag_bbox && camera_info_flag && sum_depth.size() > 0){
             tf2_ros::TransformListener tfListener(tfBuffer);
-            double cx = 720/2;
-            double cy = 1280/2;
-            double fov = 85.2*0.01745329251994329577;
-            double fx = 1.0/(2.0*tan(fov/2)) * 720;
-            Eigen::Matrix<double,3,3> K;
-            std::cout << "LM point = " << LM_point.size() << std::endl;
-            std::cout << "BBox rec = " << sum_depth.size() << std::endl;
-            K << fx,0,cx,
-                 0,fx,cy,
-                 0,0,1;
-            Eigen::Matrix<double,3,3> K_inv = K.inverse();
             for (int i = 0;i < LM_point.size();i++){
                 std::string LM_position_st = "lm_position_" ;
                 std::ostringstream st;
                 st << i;
                 LM_position_st = LM_position_st + st.str();
-                
-                Eigen::Vector3d LM;
-                LM << LM_point[i][0]-cx,LM_point[i][1]-cy,1.0;
-                Eigen::Vector3d LM_;
-                LM_ = LM * sum_depth[i];
-                Eigen::Vector3d LM_trans;   
-                LM_trans = K_inv * LM_;
+                LM_position_raw_data.x = LM_point[i][0];
+                LM_position_raw_data.y = LM_point[i][1];
+                cv::Point2d LM_position_correction_data = cam_model.rectifyPoint(LM_position_raw_data);
+                cv::Point3d LM_position_3Ddata = cam_model.projectPixelTo3dRay(LM_position_correction_data);
 
-                LM_trans(0) = LM_trans(0)*0.01/fx;
-                LM_trans(1) = LM_trans(1)*0.01/fx;               
-                LM_trans(2) = LM_trans(2)*0.001;
+                LM_position_3Ddata.x = LM_position_3Ddata.x*0.001*sum_depth[i];
+                LM_position_3Ddata.y = LM_position_3Ddata.y*0.001*sum_depth[i];
+                LM_position_3Ddata.z = LM_position_3Ddata.z*0.001*sum_depth[i];
 
-                std::cout << "X = " << LM_trans(0) << std::endl;
-                std::cout << "Y = " << LM_trans(1) << std::endl;
-                std::cout << "Z = " << LM_trans(2) << std::endl;
 
                 geometry_msgs::TransformStamped transformStamped;
                 transformStamped.header.stamp = ros::Time::now();
                 transformStamped.header.frame_id = "camera_depth_optical_frame";
                 transformStamped.child_frame_id = LM_position_st;
-                transformStamped.transform.translation.x = LM_trans(0);
-                transformStamped.transform.translation.y = LM_trans(1);
-                transformStamped.transform.translation.z = LM_trans(2);
+                transformStamped.transform.translation.x = LM_position_3Ddata.x;
+                transformStamped.transform.translation.y = LM_position_3Ddata.y;
+                transformStamped.transform.translation.z = LM_position_3Ddata.z;
                 tf2::Quaternion q;
                 q.setRPY(0, 0, 0.0);
                 transformStamped.transform.rotation.x = q.x();

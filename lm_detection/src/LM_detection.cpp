@@ -124,9 +124,7 @@ void depth_estimater::rgbImageCallback(const sensor_msgs::ImageConstPtr& msg){
         cv::circle(overlay_image_1, LM_position_raw_data, dot_r, cv::Scalar(0, 0, 255), -1, cv::LINE_AA);
     }
     flag_bbox = true;
-    
-    cv::imshow("BBox image", overlay_image_1);  
-    cv::waitKey(1);  
+     
 }
  
 void depth_estimater::depthImageCallback(const sensor_msgs::ImageConstPtr& msg){
@@ -171,8 +169,6 @@ void depth_estimater::depthImageCallback(const sensor_msgs::ImageConstPtr& msg){
     cv::circle(overlay_image, LM_position_raw_data, 2, cv::Scalar(255, 0, 0), -1, cv::LINE_AA);
     cv::circle(img_1, LM_position_raw_data, 2, cv::Scalar(255, 0, 0), -1, cv::LINE_AA);
     
-    cv::imshow("Depth image", overlay_image);
-    cv::waitKey(1);
 }
 
 void depth_estimater::main(){
@@ -199,7 +195,7 @@ void depth_estimater::main(){
                 LM_position_3Ddata.x = LM_position_3Ddata.x*0.001*sum_depth[i];
                 LM_position_3Ddata.y = LM_position_3Ddata.y*0.001*sum_depth[i];
                 LM_position_3Ddata.z = LM_position_3Ddata.z*0.001*sum_depth[i];
-
+                std::cout << "Depth =>" <<  LM_position_3Ddata.z << std::endl;
 
                 geometry_msgs::TransformStamped transformStamped;
                 transformStamped.header.stamp = ros::Time::now();

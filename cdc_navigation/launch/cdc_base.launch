@@ -145,6 +145,7 @@
     </node>
 
     <node pkg="lm_detection" type="lm_detection" name="lm_detection" output="screen"/>
+    <node pkg="cdc_navigation" type="navigation_controller" name="navigation_controller" output="screen" />
 
 <arg name="paused" default="false"/>
 <arg name="use_sim_time" default="true"/>

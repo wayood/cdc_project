@@ -1,10 +1,10 @@
 #include "CDC_navigation/navigation_controller.h"
 
 Navigation::Navigation(void)
-:wp_flag(false)
+:wp_flag(false),wp_new_flag(false)
 {
     wp_init_sub_ = nh.subscribe("/waypoint",1,&Navigation::wp_callback,this);
-    // wp_new_sub = nh.subscribe("/waypoint_new",1,&CDCPlanner::wp_new_callback,this);
+    wp_new_sub_ = nh.subscribe("/waypoint_new",1,&Navigation::wp_new_callback,this);
     odom_sub_ = nh.subscribe("/odom",1,&Navigation::odom_callback,this);
     goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("move_base_simple/goal", 1);
 }
@@ -20,11 +20,12 @@ void Navigation::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 {
     odom_subscribe = msg;
 }
-// void Navigation::wp_new_callback(const waypoint_generator::Waypoint_array& msg)
-// {
-//     wp_new_array_subscribe = msg;
-//     wp_new_flag = true;
-// }
+
+void Navigation::wp_new_callback(const waypoint_generator::Waypoint_array& msg)
+{
+    wp_new_array_subscribe = msg;
+    wp_new_flag = true;
+}
 
 void Navigation::process(void)
 {
@@ -39,10 +40,18 @@ void Navigation::process(void)
             if (count == 0){  
                 nextGoal(wp_array_subscribe,count);
             }
+            if(wp_new_flag){
+                nextGoal(wp_new_array_subscribe,count);
+            }
+                
             double l = sqrt(pow(wp_array_subscribe.wp[count].x - odom_subscribe->pose.pose.position.x,2) + pow(wp_array_subscribe.wp[count].y - odom_subscribe->pose.pose.position.y,2));
             if (l < Tolerence){
                 count += 1;
-                nextGoal(wp_array_subscribe,count);
+                if(wp_array_subscribe.wp.size() < count){
+                    ROS_INFO("Finish Operation");
+                    break;
+                }
+                nextGoal(wp_new_array_subscribe,count);
                 ROS_INFO("Next Goal");
             }
             

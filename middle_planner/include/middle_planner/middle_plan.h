@@ -41,10 +41,14 @@ public:
     void prepare(void);
     Eigen::MatrixXd A_matrix(const Eigen::MatrixXd&,const Eigen::MatrixXd&,const Eigen::MatrixXd&);
     void WP_publish(Eigen::MatrixXd&);
+    Eigen::MatrixXd LM_first_matching_current(const Eigen::MatrixXd&);
     Eigen::MatrixXd LM_first;
     Eigen::MatrixXd LM_current;
+    Eigen::MatrixXd LM_first_matching;
     Eigen::MatrixXd wp_first;
     Eigen::MatrixXd wp_new;
+    std::vector<std::string> LM_first_number;
+    std::vector<std::string> LM_current_number;
 protected:
     ros::NodeHandle nh;
     ros::Publisher wp_pub;
@@ -57,6 +61,7 @@ protected:
     waypoint_generator::Waypoint_array wp_array_publish;
     lm_detection::Position_array lm_array;
     geometry_msgs::PoseStamped middle_pose;
+    Eigen::MatrixXd LM_first_stock;
     bool wp_flag;
     bool lm_flag;
 };

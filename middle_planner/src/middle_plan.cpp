@@ -6,7 +6,7 @@ CDCPlanner::CDCPlanner(void)
     wp_init_sub = nh.subscribe("/waypoint",1,&CDCPlanner::wp_callback,this);
     lm_sub = nh.subscribe("/lm_position",1,&CDCPlanner::lm_callback,this);
     wp_pub = nh.advertise<waypoint_generator::Waypoint_array>("waypoint_new", 1);
-    marker_pub = nh.advertise<visualization_msgs::Marker>("waypoint_new", 1);
+    marker_pub = nh.advertise<visualization_msgs::Marker>("waypoint_marker_new", 1);
 }
 
 
@@ -33,35 +33,52 @@ void CDCPlanner::process(void)
             if(first_flag == 0)
             {
                 prepare();
-                if(wp_first.cols() > 0 && LM_first.cols() > 2){
-                    first_flag = 1;
-                }
             }
-            std::cout << "LM initial size => " << LM_first.cols() << std::endl;
-            std::cout << "WayPoint initial size => " << wp_first.cols() << std::endl;
+                
+            if(wp_first.cols() > 0 && LM_first.cols() > 2)
+            {
+                first_flag = 1;
+            }
+            // std::cout << "LM initial size => " << LM_first.cols() << std::endl;
+            // std::cout << "WayPoint initial size => " << wp_first.cols() << std::endl;
             if(first_flag == 1)
             {
                 LM_current = Eigen::MatrixXd::Ones(3,lm_array.position.size());
+                std::vector<std::string> LM_current_number(lm_array.position.size());
                 for (int i = 0; i < lm_array.position.size(); i++){
                     LM_current(0,i) = lm_array.position[i].x;
                     LM_current(1,i) = lm_array.position[i].y;
-                    ROS_INFO("lm_current get!! %f %f ",LM_current(0,i),LM_current(1,i));
+                    LM_current_number[i] = lm_array.position[i].header.frame_id;
+                    // ROS_INFO("lm_current get!! %f %f ",LM_current(0,i),LM_current(1,i));
                 }
                 
-
+                LM_first_matching = LM_first_matching_current(LM_first);
+                std::cout << "LM first matching size => " << LM_first_matching.cols() << std::endl;
+                std::cout << "LM first size => " << LM_first.cols() << std::endl;
+                std::cout << "LM current size => " << LM_current.cols() << std::endl;
                 if(LM_current.cols() == LM_first.cols()){
-                    ROS_ERROR("calucurate A Matrix !!");
                     wp_new = A_matrix(LM_first,LM_current,wp_first);
                     WP_publish(wp_new);
                 }
                 
             }
-            
-            
         }
         ros::spinOnce();
         loop_rate.sleep();
     }
+}
+
+Eigen::MatrixXd CDCPlanner::LM_first_matching_current(const Eigen::MatrixXd& LM_first)
+{   
+    int count = 0;
+    LM_first_stock = Eigen::MatrixXd::Ones(3,LM_current_number.size());
+    for (int i = 0;i < LM_current_number.size();i++){
+        auto itr = std::find(LM_first_number.begin(),LM_first_number.end(),LM_current_number[i]);
+        const int wanted_index = std::distance(LM_first_number.begin(), itr);
+        LM_first_stock(0,count) =  LM_first(0,wanted_index);
+        LM_first_stock(1,count) =  LM_first(1,wanted_index);        
+    }
+    return LM_first_stock;
 }
 
 void CDCPlanner::prepare(void)
@@ -74,9 +91,11 @@ void CDCPlanner::prepare(void)
     }
 
     LM_first = Eigen::MatrixXd::Ones(3,lm_array.position.size());
+    std::vector<std::string> LM_first_number(lm_array.position.size());
     for (int i = 0;i<lm_array.position.size();i++){
         LM_first(0,i) = lm_array.position[i].x;
         LM_first(1,i) = lm_array.position[i].y;
+        LM_first_number[i] = lm_array.position[i].header.frame_id;
         // ROS_INFO("lm_first get!! %f %f ",LM_first(0,i),LM_first(1,i));
     }
     return;
@@ -91,7 +110,7 @@ Eigen::MatrixXd CDCPlanner::A_matrix(const Eigen::MatrixXd& lm_first,const Eigen
     Eigen::MatrixXd lm_first_inverse = svd.matrixV() * s.asDiagonal() * svd.matrixU().transpose();
     A = lm_current * lm_first_inverse;
     wp_new =  A * wp_first;
-    ROS_ERROR("return New Waypoint !!");
+    // ROS_ERROR("return New Waypoint !!");
     return wp_new;
 }
 
@@ -131,7 +150,7 @@ void CDCPlanner::WP_publish(Eigen::MatrixXd& wp_new)
         marker_pub.publish(marker);
 
     }
-    ROS_ERROR("Publish New Waypoint !!");  
+    // ROS_ERROR("Publish New Waypoint !!");  
     wp_pub.publish(wp_array_publish);
 }
 

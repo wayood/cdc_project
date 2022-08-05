@@ -127,8 +127,8 @@ include_directories(
   ${EIGEN3_INCLUDE_DIRS}
 )
 
-add_executable(middle_plan src/middle_plan.cpp)
-target_link_libraries(middle_plan
+add_executable(compensation src/middle_plan.cpp)
+target_link_libraries(compensation
   ${catkin_LIBRARIES}
 )
 ## Declare a C++ library
@@ -139,7 +139,7 @@ target_link_libraries(middle_plan
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(middle_plan ${middle_plan_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(compensation ${middle_plan_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context

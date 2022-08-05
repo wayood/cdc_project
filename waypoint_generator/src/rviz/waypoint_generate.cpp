@@ -118,7 +118,7 @@
    marker.color.a = 1.0f;
    marker_pub_.publish(marker);
    count += 1; 
-   ROS_ERROR("wp: %.3f %.3f %.3f [frame=%s]", x, y, theta, fixed_frame.c_str());
+  //  ROS_ERROR("wp: %.3f %.3f %.3f [frame=%s]", x, y, theta, fixed_frame.c_str());
    
  }
 

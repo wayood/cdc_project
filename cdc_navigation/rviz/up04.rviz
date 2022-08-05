@@ -225,70 +225,6 @@ Visualization Manager:
           Value: true
         lm_position_1:
           Value: true
-        lm_position_10:
-          Value: true
-        lm_position_11:
-          Value: true
-        lm_position_12:
-          Value: true
-        lm_position_13:
-          Value: true
-        lm_position_14:
-          Value: true
-        lm_position_15:
-          Value: true
-        lm_position_16:
-          Value: true
-        lm_position_17:
-          Value: true
-        lm_position_18:
-          Value: true
-        lm_position_19:
-          Value: true
-        lm_position_2:
-          Value: true
-        lm_position_20:
-          Value: true
-        lm_position_21:
-          Value: true
-        lm_position_22:
-          Value: true
-        lm_position_23:
-          Value: true
-        lm_position_24:
-          Value: true
-        lm_position_25:
-          Value: true
-        lm_position_26:
-          Value: true
-        lm_position_27:
-          Value: true
-        lm_position_28:
-          Value: true
-        lm_position_29:
-          Value: true
-        lm_position_3:
-          Value: true
-        lm_position_30:
-          Value: true
-        lm_position_31:
-          Value: true
-        lm_position_32:
-          Value: true
-        lm_position_33:
-          Value: true
-        lm_position_4:
-          Value: true
-        lm_position_5:
-          Value: true
-        lm_position_6:
-          Value: true
-        lm_position_7:
-          Value: true
-        lm_position_8:
-          Value: true
-        lm_position_9:
-          Value: true
         map:
           Value: true
         rear_wheel_link:
@@ -320,70 +256,6 @@ Visualization Manager:
                       lm_position_0:
                         {}
                       lm_position_1:
-                        {}
-                      lm_position_10:
-                        {}
-                      lm_position_11:
-                        {}
-                      lm_position_12:
-                        {}
-                      lm_position_13:
-                        {}
-                      lm_position_14:
-                        {}
-                      lm_position_15:
-                        {}
-                      lm_position_16:
-                        {}
-                      lm_position_17:
-                        {}
-                      lm_position_18:
-                        {}
-                      lm_position_19:
-                        {}
-                      lm_position_2:
-                        {}
-                      lm_position_20:
-                        {}
-                      lm_position_21:
-                        {}
-                      lm_position_22:
-                        {}
-                      lm_position_23:
-                        {}
-                      lm_position_24:
-                        {}
-                      lm_position_25:
-                        {}
-                      lm_position_26:
-                        {}
-                      lm_position_27:
-                        {}
-                      lm_position_28:
-                        {}
-                      lm_position_29:
-                        {}
-                      lm_position_3:
-                        {}
-                      lm_position_30:
-                        {}
-                      lm_position_31:
-                        {}
-                      lm_position_32:
-                        {}
-                      lm_position_33:
-                        {}
-                      lm_position_4:
-                        {}
-                      lm_position_5:
-                        {}
-                      lm_position_6:
-                        {}
-                      lm_position_7:
-                        {}
-                      lm_position_8:
-                        {}
-                      lm_position_9:
                         {}
                     camera_left_ir_frame:
                       camera_left_ir_optical_frame:
@@ -508,7 +380,7 @@ Visualization Manager:
       Color: 200; 200; 200
       Color Layer: elevation
       Color Transformer: GridMapLayer
-      Enabled: true
+      Enabled: false
       Height Layer: elevation
       Height Transformer: GridMapLayer
       History Length: 1
@@ -522,13 +394,29 @@ Visualization Manager:
       Topic: /elevation_mapping/elevation_map
       Unreliable: false
       Use Rainbow: true
-      Value: true
+      Value: false
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /waypoint_first
       Name: Marker
       Namespaces:
         {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /waypoint_marker_new
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /lm_position_marker
+      Name: Marker
+      Namespaces:
+        LM_position: true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -563,7 +451,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 18.694133758544922
+      Distance: 5.206335067749023
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -578,10 +466,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6503973007202148
+      Pitch: 0.500397264957428
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 6.236766338348389
+      Yaw: 3.70676851272583
     Saved:
       - Class: rviz/Orbit
         Distance: 4.486889839172363
@@ -619,5 +507,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1267
-  X: 395
-  Y: 1050
+  X: 363
+  Y: 1080

@@ -12,6 +12,7 @@
 #include <message_filters/subscriber.h>
 #include <lm_detection/Position.h>
 #include <lm_detection/Position_array.h>
+#include <visualization_msgs/Marker.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <sensor_msgs/CameraInfo.h>
 #include <tf2_ros/static_transform_broadcaster.h>
@@ -32,6 +33,7 @@ public:
     void depthImageCallback(const sensor_msgs::ImageConstPtr& msg);
     void camera_info_callback(const sensor_msgs::ImageConstPtr& rgb_msg,const sensor_msgs::ImageConstPtr& depth_msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
     void main();
+    void LM_rviz_publish(const cv::Point3d&,int);
     cv::Point2d LM_position_raw_data;
     tf2_ros::TransformBroadcaster dynamic_br_;
     tf2_ros::Buffer tfBuffer;
@@ -50,13 +52,15 @@ public:
 private:
     ros::NodeHandle nh;
     ros::Subscriber sub_rgb, sub_depth;
+    ros::Publisher marker_pub;
     
 };
  
 depth_estimater::depth_estimater(){
     sub_rgb = nh.subscribe<sensor_msgs::Image>("/saliency/image", 5, &depth_estimater::rgbImageCallback, this);
     sub_depth = nh.subscribe<sensor_msgs::Image>("/camera/depth/image_raw", 5, &depth_estimater::depthImageCallback, this);
-    LM_pub = nh.advertise<lm_detection::Position_array>("lm_position",10);
+    LM_pub = nh.advertise<lm_detection::Position_array>("lm_position",1);
+    marker_pub = nh.advertise<visualization_msgs::Marker>("lm_position_marker", 1);
 }
  
 depth_estimater::~depth_estimater(){
@@ -81,7 +85,7 @@ void depth_estimater::rgbImageCallback(const sensor_msgs::ImageConstPtr& msg){
         exit(-1);
     }
     cv::Mat normImage;
-    const double threshold = 100.0;
+    const double threshold = 150.0;
     const double maxValue = 255.0;
     
     cv::threshold(cv_ptr->image, normImage, threshold, maxValue, cv::THRESH_BINARY);
@@ -142,13 +146,14 @@ void depth_estimater::depthImageCallback(const sensor_msgs::ImageConstPtr& msg){
     flag_depth = false;
     int sum_count = 1;
     for(int count = 0;count < BBox_rectangle.size();count++){
+        sum_count = 1;
         for(int i = 0; i < cv_ptr_depth->image.rows; i++)
         {
             for(int j = 0; j < cv_ptr_depth->image.cols; j++)
             {   
-                int Di = cv_ptr_depth->image.at<u_int16_t>(i,j);
-                if (BBox_rectangle[count][0] < j && BBox_rectangle[count][1] < i){
-                    if(BBox_rectangle[count][2] > j && BBox_rectangle[count][3] > i && Di > 0){
+                uint16_t Di = cv_ptr_depth->image.at<u_int16_t>(i,j);
+                if (BBox_rectangle[count][0] + 5 < j && BBox_rectangle[count][1] + 5 < i){
+                    if(BBox_rectangle[count][2] - 5 > j && BBox_rectangle[count][3] - 5 > i && Di > 0){
                         sum_depth[count] += Di;
                         sum_count += 1;
                     }
@@ -158,7 +163,7 @@ void depth_estimater::depthImageCallback(const sensor_msgs::ImageConstPtr& msg){
             }
 
         }
-        sum_depth[count] = sum_depth[count]/sum_count;    
+        sum_depth[count] = sum_depth[count]/sum_count;
     }
 
     flag_depth = true;
@@ -176,26 +181,26 @@ void depth_estimater::main(){
     message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh,"/saliency/image", 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh,"/camera/depth/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::CameraInfo> camera_info_sub(nh,"/camera/depth/camera_info",1);
-    message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image,sensor_msgs::CameraInfo> sync(rgb_sub, depth_sub, camera_info_sub, 10);
+    message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image,sensor_msgs::CameraInfo> sync(rgb_sub, depth_sub, camera_info_sub, 1);
     sync.registerCallback(boost::bind(&depth_estimater::camera_info_callback, this, _1, _2, _3));
     while(false == ros::isShuttingDown()){
         
         if(flag_depth && flag_bbox && camera_info_flag && sum_depth.size() > 0){
             tf2_ros::TransformListener tfListener(tfBuffer);
+            LM_position_array.position = {};
             for (int i = 0;i < LM_point.size();i++){
                 std::string LM_position_st = "lm_position_" ;
                 std::ostringstream st;
-                st << i;
+                st << i ;
                 LM_position_st = LM_position_st + st.str();
                 LM_position_raw_data.x = LM_point[i][0];
                 LM_position_raw_data.y = LM_point[i][1];
                 cv::Point2d LM_position_correction_data = cam_model.rectifyPoint(LM_position_raw_data);
                 cv::Point3d LM_position_3Ddata = cam_model.projectPixelTo3dRay(LM_position_correction_data);
-
+                
                 LM_position_3Ddata.x = LM_position_3Ddata.x*0.001*sum_depth[i];
                 LM_position_3Ddata.y = LM_position_3Ddata.y*0.001*sum_depth[i];
                 LM_position_3Ddata.z = LM_position_3Ddata.z*0.001*sum_depth[i];
-                std::cout << "Depth =>" <<  LM_position_3Ddata.z << std::endl;
 
                 geometry_msgs::TransformStamped transformStamped;
                 transformStamped.header.stamp = ros::Time::now();
@@ -221,15 +226,17 @@ void depth_estimater::main(){
                         ros::Duration(1.0).sleep();
                         continue;
                 }
-                auto& map_to_depth_transform = lookuptransformStamped.transform.translation;
+                
                 LM_position.header.frame_id = LM_position_st;
                 LM_position.header.stamp = ros::Time::now();
-                LM_position.x = map_to_depth_transform.x;
-                LM_position.y = map_to_depth_transform.y;
-                LM_position.z = map_to_depth_transform.z;
+                LM_position.header.seq = i;
+                LM_position.x = LM_position_3Ddata.x;
+                LM_position.y = LM_position_3Ddata.y;
+                LM_position.z = LM_position_3Ddata.z;
+                LM_rviz_publish(LM_position_3Ddata,i);
                 LM_position_array.position.push_back(LM_position);
             }
-
+            
             LM_pub.publish(LM_position_array);
                            
         }
@@ -239,10 +246,36 @@ void depth_estimater::main(){
     }
 
 }
- 
+
+void depth_estimater::LM_rviz_publish(const cv::Point3d& LM_position_rviz,int count){
+    visualization_msgs::Marker marker;
+    marker.header.frame_id = "camera_depth_optical_frame";
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "LM_position";
+    marker.id = count;
+    marker.type = visualization_msgs::Marker::CUBE;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.lifetime = ros::Duration();
+
+    marker.scale.x = 0.1;
+    marker.scale.y = 0.1;
+    marker.scale.z = 0.1;
+    marker.pose.position.x = LM_position_rviz.x;
+    marker.pose.position.y = LM_position_rviz.y;
+    marker.pose.position.z = LM_position_rviz.z;
+    marker.pose.orientation.x = 0;
+    marker.pose.orientation.y = 0;
+    marker.pose.orientation.z = 0;
+    marker.pose.orientation.w = 1;
+    marker.color.r = 0.0f;
+    marker.color.g = 0.0f;
+    marker.color.b = 1.0f;
+    marker.color.a = 1.0f;
+    marker_pub.publish(marker);
+}
+
 int main(int argc, char **argv){
     ros::init(argc, argv, "depth_estimater");
- 
     depth_estimater depthestimate;
     depthestimate.main();
     

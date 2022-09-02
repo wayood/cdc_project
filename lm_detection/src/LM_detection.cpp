@@ -33,7 +33,7 @@ public:
     void depthImageCallback(const sensor_msgs::ImageConstPtr& msg);
     void camera_info_callback(const sensor_msgs::ImageConstPtr& rgb_msg,const sensor_msgs::ImageConstPtr& depth_msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
     void main();
-    void LM_rviz_publish(const cv::Point3d&,int);
+    void LM_rviz_publish(const lm_detection::Position&,int);
     cv::Point2d LM_position_raw_data;
     tf2_ros::TransformBroadcaster dynamic_br_;
     tf2_ros::Buffer tfBuffer;
@@ -219,21 +219,22 @@ void depth_estimater::main(){
 
                 geometry_msgs::TransformStamped lookuptransformStamped;
                 try{
-                        lookuptransformStamped = tfBuffer.lookupTransform(LM_position_st, "map",ros::Time());
+                        lookuptransformStamped = tfBuffer.lookupTransform("map",LM_position_st,ros::Time(0));
                 }
                 catch (tf2::TransformException &ex){
                         ROS_WARN("%s",ex.what());
                         ros::Duration(1.0).sleep();
                         continue;
                 }
-                
+
+                auto& trans = lookuptransformStamped.transform.translation;
                 LM_position.header.frame_id = LM_position_st;
-                LM_position.header.stamp = ros::Time::now();
+                LM_position.header.stamp = ros::Time(0);
                 LM_position.header.seq = i;
-                LM_position.x = LM_position_3Ddata.x;
-                LM_position.y = LM_position_3Ddata.y;
-                LM_position.z = LM_position_3Ddata.z;
-                LM_rviz_publish(LM_position_3Ddata,i);
+                LM_position.x = trans.x;
+                LM_position.y = trans.y;
+                LM_position.z = trans.z;
+                LM_rviz_publish(LM_position,i);
                 LM_position_array.position.push_back(LM_position);
             }
             
@@ -247,10 +248,10 @@ void depth_estimater::main(){
 
 }
 
-void depth_estimater::LM_rviz_publish(const cv::Point3d& LM_position_rviz,int count){
+void depth_estimater::LM_rviz_publish(const lm_detection::Position& LM_position_rviz,int count){
     visualization_msgs::Marker marker;
-    marker.header.frame_id = "camera_depth_optical_frame";
-    marker.header.stamp = ros::Time::now();
+    marker.header.frame_id = "map";
+    marker.header.stamp = ros::Time(0);
     marker.ns = "LM_position";
     marker.id = count;
     marker.type = visualization_msgs::Marker::CUBE;

@@ -20,8 +20,8 @@
 
 <!-- Launch gazebo -->
 <include file="$(find gazebo_ros)/launch/empty_world.launch">
-  <arg name="world_name" value="$(find cdc_navigation)/worlds/clearpath_playpen.world"/>
-  <!-- <arg name="world_name" value="$(find cdc_navigation)/worlds/pf1_base.world"/> -->
+  <!-- <arg name="world_name" value="$(find cdc_navigation)/worlds/clearpath_playpen.world"/> -->
+  <arg name="world_name" value="$(find cdc_navigation)/worlds/cdc_base.world"/>
   <arg name="debug" value="false" />
   <arg name="gui" value="true" />
   <arg name="paused" value="false"/>
@@ -143,9 +143,18 @@
         <remap from="/cmd_vel" to="ackermann_steering_controller/cmd_vel"/>
         <remap from="/odom" to="ackermann_steering_controller/odom"/>
     </node>
+    
+    <!-- <node pkg="viso2_ros" type="mono_odometer" name="mono_odometer">
+        <remap from="image" to="camera/rgb/image_raw"/>
+        <param name="base_link_frame_id" value="base_link"/>
+        <param name="camera_height" value="1.00" />
+        <param name="camera_pitch"  value="0.00" />
+    </node> -->
 
     <node pkg="lm_detection" type="lm_detection" name="lm_detection" output="screen"/>
+    <node pkg="lm_detection" type="lm_tracking" name="lm_tracking" output="screen"/>
     <node pkg="cdc_navigation" type="navigation_controller" name="navigation_controller" />
+    <node pkg="motpy_ros" name="darknet_tracking" type="darknet_tracking.py" output="screen"/>
 
 <arg name="paused" default="false"/>
 <arg name="use_sim_time" default="true"/>

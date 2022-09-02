@@ -16,7 +16,9 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   cv_bridge
   message_generation
+  darknet_ros_msgs
   image_geometry
+  image_transport
 )
 
 find_package(Eigen3 REQUIRED COMPONENTS system)
@@ -85,6 +87,11 @@ include_directories(
 
 add_executable(lm_detection src/LM_detection.cpp)
 target_link_libraries(lm_detection ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(lm_detection ${lm_detection_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_executable(lm_tracking src/LM_tracking.cpp)
+target_link_libraries(lm_tracking ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+add_dependencies(lm_tracking ${lm_detection_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 #############
 ## Install ##

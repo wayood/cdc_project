@@ -1,0 +1,32 @@
+  obstacle_range: 3.0 #15.0
+  raytrace_range: 3.5 #15.0
+
+# footprint: [[-0.4, -0.325], [-0.4, 0.325], [0.4, 0.325], [0.4, -0.325]]
+#robot_radius: 0.105
+#走行成功 many_obs.launch
+  footprint: [[-0.2, -0.25], [-0.2, 0.25], [0.2, 0.25], [0.2, -0.25]]
+
+# footprint: [[-0.15, -0.12], [-0.15, 0.12], [0.15, 0.12], [0.15, -0.12]]
+# footprint: [[-0.2, -0.2], [-0.2, 0.2], [0.2, 0.2], [0.2, -0.2]]
+# footprint: [[-0.2, -0.12], [-0.2, 0.12], [0.05, 0.12], [0.05, -0.12]]
+  inflation_radius: 1.0
+  cost_scaling_factor: 3.0
+
+
+  map_type: costmap
+  observation_sources: scan_local
+  scan_local: {sensor_frame: base_link, data_type: LaserScan, topic: scan, marking: true, clearing: true}
+
+  global_frame: odom
+  robot_base_frame: base_link
+
+  update_frequency: 5.0 #10.0
+  publish_frequency: 5.0 #10.0
+  transform_tolerance: 0.5  
+
+  static_map: false  
+  rolling_window: true
+  width: 3
+  height: 3
+  resolution: 0.05
+  

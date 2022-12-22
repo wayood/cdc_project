@@ -29,7 +29,7 @@ generate_messages(
 )
 
 catkin_package(
-#  INCLUDE_DIRS include
+  # INCLUDE_DIRS include
 #  LIBRARIES plugin_lecture
    CATKIN_DEPENDS roscpp rospy std_msgs message_runtime
 #  DEPENDS system_lib
@@ -46,7 +46,7 @@ set(QT_LIBRARIES Qt5::Widgets)
 add_definitions(-DQT_NO_KEYWORDS)
 
 include_directories(
-#  include
+  # include
   ${catkin_INCLUDE_DIRS}
 )
 

@@ -6,7 +6,6 @@
 <!-- <arg name="rvizconfig" default="$(find urdf_tutorial)/rviz/urdf.rviz"/> -->
 
 
-<arg name="robot_name" default="PF1"/>
 <arg name="enable_odom_tf" default="false"/>
 <arg name="init_pose" default=""/>
 <arg name="x" default="0.0"/>
@@ -56,11 +55,6 @@
 <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false"/>
 
 
-<node name="rqt_robot_steering" pkg="rqt_robot_steering" type="rqt_robot_steering">
-  <param name="default_topic" value="ackermann_steering_controller/cmd_vel"/> 
-</node>
-
-
     <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" >
       <rosparam command="load" file="$(find cdc_navigation)/config/mode1.yaml" />
       <remap from="/odometry/filtered" to="odom" />
@@ -76,14 +70,6 @@
     <!--map-->
     <!-- <node pkg="map_server" name="map_server" type="map_server" args="$(find cdc_navigation)/map/cdc_base.yaml"/> -->
 
-     <!-- amcl -->
-    <!-- <node pkg="amcl" type="amcl" name="amcl" clear_params="true">
-      <rosparam command="load" file="$(find cdc_navigation)/config/amcl.yaml" />
-      <param name="base_frame_id" value="base_link" />
-      <param name="odom_frame_id" value="odom" />
-      <param name="global_frame_id" value="map" />
-      <remap from="scan" to="scan" />
-    </node> -->
   <node pkg="cdc_navigation" type="tf_to_pose_publisher.py" name="robot_pose_publisher">
     <param name="from_frame" type="string" value="map"/>
     <param name="to_frame" type="string" value="base_link"/>
@@ -109,7 +95,7 @@
   </node>
 
 <!-- feture object detection -->
-    <node name="saliencymapVOCUS2" pkg="visual_saliency" type="saliencyDetectionVOCUS2" output="screen">
+    <node name="saliencymapVOCUS2" pkg="visual_saliency" type="saliencyDetectionVOCUS2">
 		  <remap from="/rgbimage_in" to="/camera/color/image_raw" />
 		  <remap from="/saliency/image" to="/saliency/image" />
       <param name="image_resize_percent" type="double" value="0.25"/>
@@ -151,10 +137,11 @@
         <param name="camera_pitch"  value="0.00" />
     </node> -->
 
-    <node pkg="lm_detection" type="lm_detection" name="lm_detection" output="screen"/>
-    <node pkg="lm_detection" type="lm_tracking" name="lm_tracking" output="screen"/>
+    <node pkg="lm_detection" type="lm_detection" name="lm_detection" />
+    <node pkg="lm_detection" type="optical_flow" name="optical_flow" />
+    <node pkg="lm_detection" type="lm_tracking" name="lm_tracking" />
+    <node pkg="middle_planner" type="compensation" name="compensation"/>
     <node pkg="cdc_navigation" type="navigation_controller" name="navigation_controller" />
-    <node pkg="motpy_ros" name="darknet_tracking" type="darknet_tracking.py" output="screen"/>
 
 <arg name="paused" default="false"/>
 <arg name="use_sim_time" default="true"/>

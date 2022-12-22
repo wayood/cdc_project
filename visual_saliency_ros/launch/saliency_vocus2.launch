@@ -1,5 +1,5 @@
 <launch>
-	<arg name="imagestream" value="/camera/rgb/image_raw"  />
+	<arg name="imagestream" value="/camera/color/image_raw"  />
 	<arg name="algorithm" value="VOCUS2" />
 
 	<node name="saliencymap$(arg algorithm)" pkg="visual_saliency" type="saliencyDetectionVOCUS2" output="screen">
@@ -12,9 +12,9 @@
 		<param name="time_show" type="bool" value="true" />
 	</node>
 	
-	<arg name="rviz" default="true" />
+	<!-- <arg name="rviz" default="true" />
 	<group if="$(arg rviz)">
     <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz" args="-d $(find visual_saliency)/rviz_cfg/config.rviz" />
-    </group>
+    </group> -->
 	
 </launch>

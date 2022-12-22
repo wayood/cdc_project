@@ -4,7 +4,8 @@ CDCPlanner::CDCPlanner(void)
 :wp_flag(false),lm_flag(false)
 {
     wp_init_sub = nh.subscribe("/waypoint",1,&CDCPlanner::wp_callback,this);
-    lm_sub = nh.subscribe("/lm_position",1,&CDCPlanner::lm_callback,this);
+    lm_current_sub = nh.subscribe("tracking/lm_position_current",1,&CDCPlanner::lm_current_callback,this);
+    lm_first_sub = nh.subscribe("detection/lm_first_position",1,&CDCPlanner::lm_first_callback,this);
     wp_pub = nh.advertise<waypoint_generator::Waypoint_array>("waypoint_new", 1);
     marker_pub = nh.advertise<visualization_msgs::Marker>("waypoint_marker_new", 1);
 }
@@ -13,13 +14,24 @@ CDCPlanner::CDCPlanner(void)
 void CDCPlanner::wp_callback(const waypoint_generator::Waypoint_array& msg)
 {
     wp_array_subscribe = msg;
-    wp_flag = true;
+    if(wp_array_subscribe.wp.size() > 0){
+        wp_flag = true;
+    }
+    
 }
 
-void CDCPlanner::lm_callback(const lm_detection::Position_array& msg)
+void CDCPlanner::lm_current_callback(const lm_detection::Position_array& msg)
 {
-    lm_array = msg;
-    lm_flag = true;
+    lm_current_array = msg;
+    if(lm_current_array.position.size() > 2){
+        lm_flag = true;
+    }
+    
+}
+
+void CDCPlanner::lm_first_callback(const lm_detection::Position_array& msg)
+{
+    lm_first_array = msg;
 }
 
 void CDCPlanner::process(void)
@@ -30,38 +42,22 @@ void CDCPlanner::process(void)
     ROS_INFO("================================");
     while(ros::ok()){
         if(wp_flag && lm_flag){
-            if(first_flag == 0)
-            {
-                prepare();
+            
+            prepare();
+            LM_current = Eigen::MatrixXd::Ones(3,lm_current_array.position.size());
+            std::vector<std::string> LM_current_number(lm_current_array.position.size());
+
+            for (int i = 0; i < lm_current_array.position.size(); i++){
+                LM_current(0,i) = lm_current_array.position[i].x;
+                LM_current(1,i) = lm_current_array.position[i].y;
+                LM_current_number[i] = lm_current_array.position[i].header.seq;
+                // ROS_INFO("lm_current get!! %f %f ",LM_current(0,i),LM_current(1,i));
             }
-                
-            if(wp_first.cols() > 0 && LM_first.cols() > 2)
-            {
-                first_flag = 1;
-            }
-            // std::cout << "LM initial size => " << LM_first.cols() << std::endl;
-            // std::cout << "WayPoint initial size => " << wp_first.cols() << std::endl;
-            if(first_flag == 1)
-            {
-                LM_current = Eigen::MatrixXd::Ones(3,lm_array.position.size());
-                std::vector<std::string> LM_current_number(lm_array.position.size());
-                for (int i = 0; i < lm_array.position.size(); i++){
-                    LM_current(0,i) = lm_array.position[i].x;
-                    LM_current(1,i) = lm_array.position[i].y;
-                    LM_current_number[i] = lm_array.position[i].header.frame_id;
-                    // ROS_INFO("lm_current get!! %f %f ",LM_current(0,i),LM_current(1,i));
-                }
-                
-                LM_first_matching = LM_first_matching_current(LM_first);
-                std::cout << "LM first matching size => " << LM_first_matching.cols() << std::endl;
-                std::cout << "LM first size => " << LM_first.cols() << std::endl;
-                std::cout << "LM current size => " << LM_current.cols() << std::endl;
-                if(LM_current.cols() == LM_first.cols()){
-                    wp_new = A_matrix(LM_first,LM_current,wp_first);
-                    WP_publish(wp_new);
-                }
-                
-            }
+            
+            LM_first_matching = LM_first_matching_current(LM_first);
+            wp_new = A_matrix(LM_first_matching,LM_current,wp_first);
+            WP_publish(wp_new);
+            
         }
         ros::spinOnce();
         loop_rate.sleep();
@@ -70,13 +66,12 @@ void CDCPlanner::process(void)
 
 Eigen::MatrixXd CDCPlanner::LM_first_matching_current(const Eigen::MatrixXd& LM_first)
 {   
-    int count = 0;
-    LM_first_stock = Eigen::MatrixXd::Ones(3,LM_current_number.size());
-    for (int i = 0;i < LM_current_number.size();i++){
-        auto itr = std::find(LM_first_number.begin(),LM_first_number.end(),LM_current_number[i]);
+    LM_first_stock = Eigen::MatrixXd::Ones(3,LM_current.cols());
+    for (int i = 0;i < LM_current.cols();i++){       
+        auto itr = std::find(LM_first_number.begin(),LM_first_number.end(),LM_current_number[i]);        
         const int wanted_index = std::distance(LM_first_number.begin(), itr);
-        LM_first_stock(0,count) =  LM_first(0,wanted_index);
-        LM_first_stock(1,count) =  LM_first(1,wanted_index);        
+        LM_first_stock(0,i) =  LM_first(0,wanted_index);
+        LM_first_stock(1,i) =  LM_first(1,wanted_index);        
     }
     return LM_first_stock;
 }
@@ -90,12 +85,12 @@ void CDCPlanner::prepare(void)
         // ROS_INFO("wp_init get!! %f %f ",wp_first(0,i),wp_first(1,i));
     }
 
-    LM_first = Eigen::MatrixXd::Ones(3,lm_array.position.size());
-    std::vector<std::string> LM_first_number(lm_array.position.size());
-    for (int i = 0;i<lm_array.position.size();i++){
-        LM_first(0,i) = lm_array.position[i].x;
-        LM_first(1,i) = lm_array.position[i].y;
-        LM_first_number[i] = lm_array.position[i].header.frame_id;
+    LM_first = Eigen::MatrixXd::Ones(3,lm_first_array.position.size());
+    std::vector<std::string> LM_first_number(lm_first_array.position.size());
+    for (int i = 0;i<lm_first_array.position.size();i++){
+        LM_first(0,i) = lm_first_array.position[i].x;
+        LM_first(1,i) = lm_first_array.position[i].y;
+        LM_first_number[i] = lm_first_array.position[i].header.seq;
         // ROS_INFO("lm_first get!! %f %f ",LM_first(0,i),LM_first(1,i));
     }
     return;
@@ -104,13 +99,12 @@ void CDCPlanner::prepare(void)
 Eigen::MatrixXd CDCPlanner::A_matrix(const Eigen::MatrixXd& lm_first,const Eigen::MatrixXd& lm_current,const Eigen::MatrixXd& wp_first)
 {
     Eigen::MatrixXd A;
+    double epsilon = 0.000001;
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(lm_first,Eigen::ComputeThinU | Eigen::ComputeThinV);
-    Eigen::VectorXd s = svd.singularValues();
-    s = s.array().inverse();
-    Eigen::MatrixXd lm_first_inverse = svd.matrixV() * s.asDiagonal() * svd.matrixU().transpose();
+    double tolerance = epsilon * std::max(lm_first.cols(), lm_first.rows()) *svd.singularValues().array().abs()(0);
+    Eigen::MatrixXd lm_first_inverse =  svd.matrixV() *  (svd.singularValues().array().abs() > tolerance).select(svd.singularValues().array().inverse(), 0).matrix().asDiagonal() * svd.matrixU().adjoint();
     A = lm_current * lm_first_inverse;
     wp_new =  A * wp_first;
-    // ROS_ERROR("return New Waypoint !!");
     return wp_new;
 }
 

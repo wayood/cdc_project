@@ -1,75 +1,29 @@
-#include <ros/ros.h>
-#include <sensor_msgs/Image.h>
-#include <cv_bridge/cv_bridge.h>
-#include <opencv2/opencv.hpp>
-#include <image_transport/image_transport.h>
-#include <iostream>
-#include <message_filters/time_synchronizer.h>
-#include <std_msgs/Header.h>
-#include <vector>
-#include <image_geometry/pinhole_camera_model.h>
-#include <string>
-#include <message_filters/subscriber.h>
-#include <lm_detection/Position.h>
-#include <lm_detection/Position_array.h>
-#include <visualization_msgs/Marker.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <sensor_msgs/CameraInfo.h>
-#include <tf2_ros/static_transform_broadcaster.h>
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/transform_broadcaster.h>
-#include <tf2/LinearMath/Quaternion.h>
-#include <math.h>
-#include <sstream>
-#include <Eigen/Dense>
-#include <Eigen/Core>
-#include <Eigen/LU>
-
-class depth_estimater{
-public:
-    depth_estimater();
-    ~depth_estimater();
-    void rgbImageCallback(const sensor_msgs::ImageConstPtr& msg);
-    void depthImageCallback(const sensor_msgs::ImageConstPtr& msg);
-    void camera_info_callback(const sensor_msgs::ImageConstPtr& rgb_msg,const sensor_msgs::ImageConstPtr& depth_msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
-    void main();
-    void LM_rviz_publish(const lm_detection::Position&,int);
-    cv::Point2d LM_position_raw_data;
-    tf2_ros::TransformBroadcaster dynamic_br_;
-    tf2_ros::Buffer tfBuffer;
-    std::vector<std::vector <double>> LM_point;
-    std::vector<std::vector <int>> BBox_rectangle;
-    lm_detection::Position_array LM_position_array;
-    lm_detection::Position LM_position;
-    cv_bridge::CvImagePtr cv_ptr_depth;
-    image_geometry::PinholeCameraModel cam_model;
-    std::vector<int> sum_depth;
-    bool flag_depth = false;
-    bool flag_bbox = false;
-    bool camera_info_flag = false;
-    ros::Publisher LM_pub;
-    // tf::TransformListener listener;
-private:
-    ros::NodeHandle nh;
-    ros::Subscriber sub_rgb, sub_depth;
-    ros::Publisher marker_pub;
-    
-};
+#include "LM_detection/LM_detection.h"
  
 depth_estimater::depth_estimater(){
     sub_rgb = nh.subscribe<sensor_msgs::Image>("/saliency/image", 5, &depth_estimater::rgbImageCallback, this);
     sub_depth = nh.subscribe<sensor_msgs::Image>("/camera/depth/image_raw", 5, &depth_estimater::depthImageCallback, this);
-    LM_pub = nh.advertise<lm_detection::Position_array>("lm_position",1);
-    marker_pub = nh.advertise<visualization_msgs::Marker>("lm_position_marker", 1);
+    wp_init_sub_ = nh.subscribe("/waypoint",1,&depth_estimater::wp_callback,this);
+    LM_pub = nh.advertise<lm_detection::Position_array>("detection/lm_first_position",1);
+    marker_pub = nh.advertise<visualization_msgs::Marker>("detection/lm_position_marker", 1);
+    bbox_pub = nh.advertise<lm_detection::Bounding_Box_array>("detection/bbox_array",1);
 }
  
 depth_estimater::~depth_estimater(){
 }
+
 void depth_estimater::camera_info_callback(const sensor_msgs::ImageConstPtr& rgb_msg,const sensor_msgs::ImageConstPtr& depth_msg,const sensor_msgs::CameraInfoConstPtr& cam_info){
     std::cout << "Sucsess !!" << std::endl;
     camera_info_flag = true;
     cam_model.fromCameraInfo(cam_info);
 }
+
+void depth_estimater::wp_callback(const waypoint_generator::Waypoint_array& msg){
+    if (msg.wp.size() > 0){
+        wp_flag = true;
+    }
+}
+
 void depth_estimater::rgbImageCallback(const sensor_msgs::ImageConstPtr& msg){
  
 
@@ -177,18 +131,22 @@ void depth_estimater::depthImageCallback(const sensor_msgs::ImageConstPtr& msg){
 }
 
 void depth_estimater::main(){
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(50);
     message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh,"/saliency/image", 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh,"/camera/depth/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::CameraInfo> camera_info_sub(nh,"/camera/depth/camera_info",1);
     message_filters::TimeSynchronizer<sensor_msgs::Image, sensor_msgs::Image,sensor_msgs::CameraInfo> sync(rgb_sub, depth_sub, camera_info_sub, 1);
     sync.registerCallback(boost::bind(&depth_estimater::camera_info_callback, this, _1, _2, _3));
+    bool flag = true;
+    LM_position_array.position = {};
+    bbox_array.bbox = {};
     while(false == ros::isShuttingDown()){
-        
-        if(flag_depth && flag_bbox && camera_info_flag && sum_depth.size() > 0){
-            tf2_ros::TransformListener tfListener(tfBuffer);
-            LM_position_array.position = {};
-            for (int i = 0;i < LM_point.size();i++){
+        if(flag_depth && flag_bbox && camera_info_flag && sum_depth.size() > 0 && wp_flag && flag && LM_point.size() > 2){
+            tf2_ros::TransformListener tfListener(tfBuffer); 
+            std::cout << LM_point.size() << LM_position_array.position.size() << std::endl;
+            int i = 0;
+            while(!(LM_position_array.position.size() == LM_point.size())){
+                std::cout << LM_point[i][0] << std::endl;
                 std::string LM_position_st = "lm_position_" ;
                 std::ostringstream st;
                 st << i ;
@@ -197,7 +155,6 @@ void depth_estimater::main(){
                 LM_position_raw_data.y = LM_point[i][1];
                 cv::Point2d LM_position_correction_data = cam_model.rectifyPoint(LM_position_raw_data);
                 cv::Point3d LM_position_3Ddata = cam_model.projectPixelTo3dRay(LM_position_correction_data);
-                
                 LM_position_3Ddata.x = LM_position_3Ddata.x*0.001*sum_depth[i];
                 LM_position_3Ddata.y = LM_position_3Ddata.y*0.001*sum_depth[i];
                 LM_position_3Ddata.z = LM_position_3Ddata.z*0.001*sum_depth[i];
@@ -216,17 +173,16 @@ void depth_estimater::main(){
                 transformStamped.transform.rotation.z = q.z();
                 transformStamped.transform.rotation.w = q.w();
                 dynamic_br_.sendTransform(transformStamped);
-
                 geometry_msgs::TransformStamped lookuptransformStamped;
                 try{
                         lookuptransformStamped = tfBuffer.lookupTransform("map",LM_position_st,ros::Time(0));
+                        
                 }
                 catch (tf2::TransformException &ex){
-                        ROS_WARN("%s",ex.what());
-                        ros::Duration(1.0).sleep();
+                        ROS_WARN("%s on lm_detection",ex.what());
                         continue;
+                        i = 0;
                 }
-
                 auto& trans = lookuptransformStamped.transform.translation;
                 LM_position.header.frame_id = LM_position_st;
                 LM_position.header.stamp = ros::Time(0);
@@ -236,12 +192,26 @@ void depth_estimater::main(){
                 LM_position.z = trans.z;
                 LM_rviz_publish(LM_position,i);
                 LM_position_array.position.push_back(LM_position);
+
+                bbox.xmin = int(BBox_rectangle[i][0]/2);
+                bbox.ymin = int(BBox_rectangle[i][1]/1.5);
+                bbox.xmax = int(BBox_rectangle[i][2]/2);
+                bbox.ymax = int(BBox_rectangle[i][3]/1.5);
+                bbox.id = i;
+                bbox_array.bbox.push_back(bbox);
+                i++;
+                flag = false;
             }
-            
             LM_pub.publish(LM_position_array);
-                           
+            bbox_pub.publish(bbox_array);
+            
         }
-        
+
+        if(flag == false && flag_bbox){
+            LM_pub.publish(LM_position_array);
+            bbox_pub.publish(bbox_array);
+        }
+
         ros::spinOnce();
         loop_rate.sleep();
     }

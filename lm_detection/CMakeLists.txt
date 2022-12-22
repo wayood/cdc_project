@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   darknet_ros_msgs
   image_geometry
   image_transport
+  waypoint_generator
 )
 
 find_package(Eigen3 REQUIRED COMPONENTS system)
@@ -29,6 +30,8 @@ add_message_files(
   FILES
   Position.msg
   Position_array.msg
+  Bounding_Box.msg
+  Bounding_Box_array.msg
 )
 
 generate_messages(
@@ -66,7 +69,7 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES lm_detection
    CATKIN_DEPENDS roscpp rospy std_msgs message_runtime 
 #  DEPENDS system_lib
@@ -79,7 +82,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
@@ -93,6 +96,9 @@ add_executable(lm_tracking src/LM_tracking.cpp)
 target_link_libraries(lm_tracking ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 add_dependencies(lm_tracking ${lm_detection_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_executable(optical_flow src/optical_flow.cpp)
+target_link_libraries(optical_flow ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+add_dependencies(optical_flow ${lm_detection_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 #############
 ## Install ##
 #############

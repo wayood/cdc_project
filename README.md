@@ -9,7 +9,14 @@ this is a development for our project.
 $ chmod +x install.sh
 $ ./install.sh
 ```
-
+visual saliency installation
+```
+$ cd visual_saliency_ros
+$ git submodule update --init --recursive
+$ cd ..
+$ catkin build -DCMAKE_BUILD_TYPE=Release visual_saliency
+$ source devel/setup.bash
+```
 # Note
 
 ## docker installation

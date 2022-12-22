@@ -2,6 +2,7 @@
 
 DWAPlanner::DWAPlanner(void)
     :local_nh("~"), local_goal_subscribed(false), scan_updated(false), local_map_updated(false), odom_updated(false)
+    // , path_subscribed(false)
 {
     local_nh.param("HZ", HZ, {20});
     local_nh.param("ROBOT_FRAME", ROBOT_FRAME, {"base_link"});
@@ -22,6 +23,7 @@ DWAPlanner::DWAPlanner(void)
     local_nh.param("USE_SCAN_AS_INPUT", USE_SCAN_AS_INPUT, {false});
     local_nh.param("GOAL_THRESHOLD", GOAL_THRESHOLD, {0.3});
     local_nh.param("TURN_DIRECTION_THRESHOLD", TURN_DIRECTION_THRESHOLD, {1.0});
+    local_nh.param("PATH_COST_GAIN",PATH_COST_GAIN,{0.5});
     DT = 1.0 / HZ;
 
     ROS_INFO("=== DWA Planner ===");
@@ -57,6 +59,7 @@ DWAPlanner::DWAPlanner(void)
     }
     odom_sub = nh.subscribe("/odom", 1, &DWAPlanner::odom_callback, this);
     target_velocity_sub = nh.subscribe("/target_velocity", 1, &DWAPlanner::target_velocity_callback, this);
+    // path_sub = nh.subscribe("/path", 1, &DWAPlanner::path_callback, this);
 }
 
 DWAPlanner::State::State(double _x, double _y, double _yaw, double _velocity, double _yawrate)
@@ -76,10 +79,10 @@ DWAPlanner::Window::Window(const double min_v, const double max_v, const double 
 
 void DWAPlanner::local_goal_callback(const geometry_msgs::PoseStampedConstPtr& msg)
 {
-    local_goal = *msg;
+    local_goal_struct = *msg;
     try{
-        listener.transformPose(ROBOT_FRAME, ros::Time(0), local_goal, local_goal.header.frame_id, local_goal);
         local_goal_subscribed = true;
+        ROS_INFO("sucess goal");
     }catch(tf::TransformException ex){
         ROS_ERROR("%s", ex.what());
     }
@@ -89,35 +92,49 @@ void DWAPlanner::scan_callback(const sensor_msgs::LaserScanConstPtr& msg)
 {
     scan = *msg;
     scan_updated = true;
+    ROS_INFO("sucess scan");
 }
 
 void DWAPlanner::local_map_callback(const nav_msgs::OccupancyGridConstPtr& msg)
 {
     local_map = *msg;
     local_map_updated = true;
+    ROS_INFO("sucess map");
 }
 
 void DWAPlanner::odom_callback(const nav_msgs::OdometryConstPtr& msg)
 {
     current_velocity = msg->twist.twist;
     odom_updated = true;
+    ROS_INFO("sucess odom");
 }
 
 void DWAPlanner::target_velocity_callback(const geometry_msgs::TwistConstPtr& msg)
 {
     TARGET_VELOCITY = msg->linear.x;
     ROS_INFO_STREAM("target velocity was updated to " << TARGET_VELOCITY << "[m/s]");
+    ROS_INFO("sucess velocity");
 }
+
+// void DWAPlanner::path_callback(const nav_msgs::Path& msg)
+// {
+//     path = msg;
+//     path_subscribed = true;
+//     ROS_INFO("sucess path");    
+// }
 
 std::vector<DWAPlanner::State> DWAPlanner::dwa_planning(
         Window dynamic_window, 
         Eigen::Vector3d goal,
-        std::vector<std::vector<float>> obs_list)
+        std::vector<std::vector<float>> obs_list
+        )
+        // const nav_msgs::Path& path
 {
     float min_cost = 1e6;
     float min_obs_cost = min_cost;
     float min_goal_cost = min_cost;
     float min_speed_cost = min_cost;
+    // float min_path_cost = min_cost;
 
     std::vector<std::vector<State>> trajectories;
     std::vector<State> best_traj;
@@ -135,11 +152,14 @@ std::vector<DWAPlanner::State> DWAPlanner::dwa_planning(
             float to_goal_cost = calc_to_goal_cost(traj, goal);
             float speed_cost = calc_speed_cost(traj, TARGET_VELOCITY);
             float obstacle_cost = calc_obstacle_cost(traj, obs_list);
-            float final_cost = TO_GOAL_COST_GAIN*to_goal_cost + SPEED_COST_GAIN*speed_cost + OBSTACLE_COST_GAIN*obstacle_cost;
+            // float path_cost = calc_path_cost(traj, path);
+            float final_cost = TO_GOAL_COST_GAIN*to_goal_cost + SPEED_COST_GAIN*speed_cost + OBSTACLE_COST_GAIN*obstacle_cost ;
+            // + PATH_COST_GAIN*path_cost
             if(min_cost >= final_cost){
                 min_goal_cost = TO_GOAL_COST_GAIN*to_goal_cost;
                 min_obs_cost = OBSTACLE_COST_GAIN*obstacle_cost;
                 min_speed_cost = SPEED_COST_GAIN*speed_cost;
+                // min_path_cost = PATH_COST_GAIN*path_cost;
                 min_cost = final_cost;
                 best_traj = traj;
             }
@@ -175,9 +195,10 @@ void DWAPlanner::process(void)
         }
         if(input_updated && local_goal_subscribed && odom_updated){
             Window dynamic_window = calc_dynamic_window(current_velocity);
+            listener.transformPose(ROBOT_FRAME, ros::Time(0),local_goal_struct,local_goal_struct.header.frame_id,local_goal);
             Eigen::Vector3d goal(local_goal.pose.position.x, local_goal.pose.position.y, tf::getYaw(local_goal.pose.orientation));
             ROS_INFO_STREAM("local goal: (" << goal[0] << "," << goal[1] << "," << goal[2]/M_PI*180 << ")");
-
+            // ROS_FATAL("norm -> x:%f y:%f",goal(0),goal(1));
             geometry_msgs::Twist cmd_vel;
             if(goal.segment(0, 2).norm() > GOAL_THRESHOLD){
                 std::vector<std::vector<float>> obs_list;
@@ -190,7 +211,7 @@ void DWAPlanner::process(void)
                 }
 
                 std::vector<State> best_traj = dwa_planning(dynamic_window, goal, obs_list);
-
+                // , path
                 cmd_vel.linear.x = best_traj[0].velocity;
                 cmd_vel.angular.z = best_traj[0].yawrate;
                 visualize_trajectory(best_traj, 1, 0, 0, selected_trajectory_pub);
@@ -209,7 +230,7 @@ void DWAPlanner::process(void)
             odom_updated = false;
         }else{
             if(!local_goal_subscribed){
-                ROS_WARN_THROTTLE(1.0, "Local goal has not been updated");
+                ROS_WARN_THROTTLE(1.0, "Local goal has not been a updated");
             }
             if(!odom_updated){
                 ROS_WARN_THROTTLE(1.0, "Odom has not been updated");
@@ -220,6 +241,9 @@ void DWAPlanner::process(void)
             if(USE_SCAN_AS_INPUT && !scan_updated){
                 ROS_WARN_THROTTLE(1.0, "Scan has not been updated");
             }
+            // if(!path_subscribed){
+            //      ROS_WARN_THROTTLE(1.0, "Path has not been a updated");
+            // }
         }
         ros::spinOnce();
         loop_rate.sleep();
@@ -266,6 +290,26 @@ float DWAPlanner::calc_obstacle_cost(const std::vector<State>& traj, const std::
     cost = 1.0 / min_dist;
     return cost;
 }
+
+// float DWAPlanner::calc_path_cost(const std::vector<State>& traj, const nav_msgs::Path& path)
+// {
+//     //今のロボット位置とパスがどれだけ接近しているかを距離で表現、そのままコストで出す。
+//     float min_cost[10000]={};
+//     Eigen::Vector2f last_position(traj.back().x, traj.back().y);
+//     float cost = 0.0;
+//     for(int i = 0; i < sizeof(path); i++){
+//         min_cost[i]=sqrt((path.poses[i].pose.position.x - last_position[0,0])*(path.poses[i].pose.position.x - last_position[0,0])+ (path.poses[i].pose.position.y - last_position[0,1])*(path.poses[i].pose.position.y - last_position[0,1]));
+//         if(min_cost[i] < min_cost[i-1] && i>0){
+//             cost = min_cost[i];
+//         }
+//         if(min_cost[i] < 0.3){
+//             cost = 0;
+//             return cost;
+//         }
+//     }
+//     // float cost = *min_element(min_cost.begin(),min_cost.end());
+//     return cost;
+// }
 
 void DWAPlanner::motion(State& state, const double velocity, const double yawrate)
 {

@@ -1,0 +1,27 @@
+# obstacle_range: 3.0 #15.0
+# raytrace_range: 3.5 #15.0
+
+# #footprint: [[-0.4, -0.325], [-0.4, 0.325], [0.4, 0.325], [0.4, -0.325]]
+# #robot_radius: 0.105
+
+# #footprint: [[-0.2, -0.12], [-0.2, 0.12], [0.05, 0.12], [0.05, -0.12]]
+# footprint: [[-0.2, -0.2], [-0.2, 0.2], [0.2, 0.2], [0.2, -0.2]]
+# inflation_radius: 1.0
+# cost_scaling_factor: 3.0
+
+# map_type: costmap
+# observation_sources: scan
+# scan: {sensor_frame: hokuyo_sensor, data_type: LaserScan, topic: scan, marking: true, clearing: true}
+obstacle_range: 3.0 #15.0
+raytrace_range: 3.5 #15.0
+
+# footprint: [[-0.4, -0.325], [-0.4, 0.325], [0.4, 0.325], [0.4, -0.325]]
+#robot_radius: 0.105
+#走行成功 many_obs.launch
+footprint: [[-0.2, -0.25], [-0.2, 0.25], [0.2, 0.25], [0.2, -0.25]]
+
+# footprint: [[-0.15, -0.12], [-0.15, 0.12], [0.15, 0.12], [0.15, -0.12]]
+# footprint: [[-0.2, -0.2], [-0.2, 0.2], [0.2, 0.2], [0.2, -0.2]]
+# footprint: [[-0.2, -0.12], [-0.2, 0.12], [0.05, 0.12], [0.05, -0.12]]
+inflation_radius: 1.0
+cost_scaling_factor: 3.0

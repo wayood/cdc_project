@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+<arg name="model" default="$(find cdc_navigation)/xacro/pf1.xacro"/>
+<arg name="rvizconfig" default="$(find cdc_navigation)/rviz/up04.rviz"/>
+<!-- <arg name="rvizconfig" default="$(find urdf_tutorial)/rviz/urdf.rviz"/> -->
+
+
+<arg name="enable_odom_tf" default="false"/>
+<arg name="init_pose" default=""/>
+<arg name="x" default="0.0"/>
+<arg name="y" default="0.0"/>
+<arg name="z" default="1.0" />
+<arg name="roll" default="0.0"/>
+<arg name="pitch" default="0.0"/>
+<arg name="yaw" default="0.0"/>
+
+<!--<group ns="$(arg model)">-->
+
+<!-- Launch gazebo -->
+<include file="$(find gazebo_ros)/launch/empty_world.launch">
+  <!-- <arg name="world_name" value="$(find cdc_navigation)/worlds/clearpath_playpen.world"/> -->
+  <arg name="world_name" value="$(find cdc_navigation)/worlds/cdc_base.world"/>
+  <arg name="debug" value="false" />
+  <arg name="gui" value="true" />
+  <arg name="paused" value="false"/>
+  <arg name="use_sim_time" value="true"/>
+  <arg name="headless" value="false"/>
+</include>
+
+  <!-- Load the URDF into the ROS Parameter Server -->
+
+<param name="robot_description" command="$(find xacro)/xacro.py $(arg model)"/>
+
+<!-- rviz-->
+<node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)"/>
+
+
+<!-- <node name="tf_broadcast" pkg="cdc_navigation" type="tf_broadcast"/>
+<node name="tf_listen" pkg="cdc_navigation" type="tf_listen"/> -->
+
+  <rosparam file="$(find cdc_navigation)/config/ctrl_ackermann_steering_controller.yaml" command="load"  />
+  <rosparam file="$(find cdc_navigation)/config/ctrl_gains.yaml" command="load"  />
+  <rosparam file="$(find cdc_navigation)/config/ctrl_joint_state_publisher.yaml" command="load"  />
+  <rosparam file="$(find cdc_navigation)/config/ctrl_steer_bot_hardware_gazebo.yaml" command="load"  />
+
+        <!-- Spawn the controllers -->
+  <node pkg="controller_manager" type="spawner" name="controller_spawner" 
+        args="joint_state_publisher ackermann_steering_controller"
+        respawn="false" />
+
+
+
+<!-- convert joint states to TF transforms for rviz, etc -->
+<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" respawn="false"/>
+
+
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" >
+      <rosparam command="load" file="$(find cdc_navigation)/config/mode1.yaml" />
+      <remap from="/odometry/filtered" to="odom" />
+      <remap from="odom0" to="ackermann_steering_controller/odom" />
+      <remap from="imu0"  to="imu/data" />
+    </node> 
+
+
+<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" 
+    args="-unpause -urdf -model PF1 -param robot_description
+          -x $(arg x) -y $(arg y) -z $(arg z)
+          -R $(arg roll) -P $(arg pitch) -Y $(arg yaw)"/>
+    <!--map-->
+    <!-- <node pkg="map_server" name="map_server" type="map_server" args="$(find cdc_navigation)/map/cdc_base.yaml"/> -->
+
+  <node pkg="cdc_navigation" type="tf_to_pose_publisher.py" name="robot_pose_publisher">
+    <param name="from_frame" type="string" value="map"/>
+    <param name="to_frame" type="string" value="base_link"/>
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" />
+  <node pkg="nodelet" type="nodelet" name="voxel_grid" args="load pcl/VoxelGrid pcl_manager" >
+    <remap from="~input" to="/camera/depth/color/points"/>
+    <remap from="~output" to="/camera/depth/points_downsampled"/>
+    <rosparam>
+      filter_field_name: z
+      filter_limit_min: 0.01
+      filter_limit_max: 6.0  <!-- Limit the range of points to forward to 6 meters in viewing direction-->
+      filter_limit_negative: False
+      leaf_size: 0.05  <!-- Limit the density to 5 cm-->
+    </rosparam>
+  </node>
+
+  <node pkg="elevation_mapping" type="elevation_mapping" name="elevation_mapping">
+    <remap from="/points" to="/camera/depth/points_downsampled" /> 
+    <rosparam command="load" file="$(find elevation_mapping)/config/sensor_processors/robot_param.yaml"/>
+    <rosparam command="load" file="$(find elevation_mapping)/config/sensor_processors/postprocessor_pipeline.yaml"/>
+  </node>
+
+<!-- feture object detection -->
+    <node name="saliencymapVOCUS2" pkg="visual_saliency" type="saliencyDetectionVOCUS2">
+		  <remap from="/rgbimage_in" to="/camera/color/image_raw" />
+		  <remap from="/saliency/image" to="/saliency/image" />
+      <param name="image_resize_percent" type="double" value="0.25"/>
+      <param name="threshold_percent" type="double" value="0.05" />
+      <param name="topcut_enable" type="bool" value="false" />
+      <param name="topcut_pixels" type="int" value="0" />
+      <param name="time_show" type="bool" value="true" />
+    </node>
+
+    <!-- global plan-->
+    <!-- <node pkg="astar" type="astar" name="astar" output="screen" respawn="false">
+        <param name="Euclidean" value="true"/>
+        <param name="OccupyThresh" value="-1"/>
+        <param name="InflateRadius" value="0.25"/>
+        <param name="rate" value="50"/>
+    </node> -->
+
+    <!--local plan-->
+    <arg name="hz" default="5"/>
+    <arg name="use_scan_as_input" default="true"/>
+    <arg name="robot_param" default="$(find cdc_navigation)/config/robot_param.yaml"/>
+    <arg name="dwa_param" default="$(find cdc_navigation)/config/dwa_param.yaml"/> 
+    
+   <node pkg="dwa_planner" type="dwa_planner" name="dwa_planner" >
+        <rosparam command="load" file="$(arg robot_param)"/>
+        <rosparam command="load" file="$(arg dwa_param)"/>
+        <param name="HZ" value="$(arg hz)"/>
+        <param name="USE_SCAN_AS_INPUT" value="$(arg use_scan_as_input)"/>
+        <remap from="/scan" to="scan"/> 
+        <remap from="/local_goal" to="move_base_simple/goal"/>
+        <remap from="/cmd_vel" to="ackermann_steering_controller/cmd_vel"/>
+        <remap from="/odom" to="ackermann_steering_controller/odom"/>
+    </node>
+    
+    <!-- <node pkg="viso2_ros" type="mono_odometer" name="mono_odometer">
+        <remap from="image" to="camera/rgb/image_raw"/>
+        <param name="base_link_frame_id" value="base_link"/>
+        <param name="camera_height" value="1.00" />
+        <param name="camera_pitch"  value="0.00" />
+    </node> -->
+
+    <node pkg="lm_detection" type="lm_detection" name="lm_detection" />
+    <node pkg="lm_detection" type="optical_flow" name="optical_flow" />
+    <node pkg="lm_detection" type="lm_tracking" name="lm_tracking" />
+    <node pkg="middle_planner" type="compensation" name="compensation"/>
+    <node pkg="cdc_navigation" type="navigation_controller" name="navigation_controller" />
+
+<arg name="paused" default="false"/>
+<arg name="use_sim_time" default="true"/>
+<arg name="gui" default="true"/>
+<arg name="headless" default="false"/>
+<arg name="debug" default="false"/>
+
+
+</launch>

@@ -1,0 +1,22 @@
+# global_costmap:
+#   global_frame: map
+#   robot_base_frame: base_footprint
+#   footprint: [[-0.2, -0.2], [-0.2, 0.2], [0.2, 0.2], [0.2, -0.2]]
+#   update_frequency: 5.0 #10.0
+#   publish_frequency: 5.0 #10.0
+#   transform_tolerance: 0.5
+
+#   static_map: true
+map_type: costmap
+observation_sources: scan
+scan: {sensor_frame: hokuyo_sensor, data_type: LaserScan, topic: scan, marking: true, clearing: true}
+
+global_costmap:
+  global_frame: map
+  robot_base_frame: base_footprint
+
+  update_frequency: 5.0 #10.0
+  publish_frequency: 5.0 #10.0
+  transform_tolerance: 0.5
+
+  static_map: true

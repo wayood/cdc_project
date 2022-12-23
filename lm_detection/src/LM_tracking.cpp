@@ -125,7 +125,7 @@ void LM_tracking::tf_broadcast_and_lookuptransform(cv::Point3d& LM_position_3Dda
 }
 
 void LM_tracking::process(){
-    ros::Rate loop_rate(50);
+    ros::Rate loop_rate(100);
     int count = 0;
     bool flag = false;
     while(false == ros::isShuttingDown()){

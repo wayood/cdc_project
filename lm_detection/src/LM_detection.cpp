@@ -131,7 +131,7 @@ void depth_estimater::depthImageCallback(const sensor_msgs::ImageConstPtr& msg){
 }
 
 void depth_estimater::main(){
-    ros::Rate loop_rate(50);
+    ros::Rate loop_rate(100);
     message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh,"/saliency/image", 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh,"/camera/depth/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::CameraInfo> camera_info_sub(nh,"/camera/depth/camera_info",1);
@@ -190,7 +190,7 @@ void depth_estimater::main(){
                 LM_position.x = trans.x;
                 LM_position.y = trans.y;
                 LM_position.z = trans.z;
-                LM_rviz_publish(LM_position,i);
+                
                 LM_position_array.position.push_back(LM_position);
 
                 bbox.xmin = int(BBox_rectangle[i][0]/2);
@@ -204,12 +204,14 @@ void depth_estimater::main(){
             }
             LM_pub.publish(LM_position_array);
             bbox_pub.publish(bbox_array);
+            LM_rviz_publish(LM_position_array);
             
         }
 
         if(flag == false && flag_bbox){
             LM_pub.publish(LM_position_array);
             bbox_pub.publish(bbox_array);
+            LM_rviz_publish(LM_position_array);
         }
 
         ros::spinOnce();
@@ -218,31 +220,33 @@ void depth_estimater::main(){
 
 }
 
-void depth_estimater::LM_rviz_publish(const lm_detection::Position& LM_position_rviz,int count){
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = "map";
-    marker.header.stamp = ros::Time(0);
-    marker.ns = "LM_position";
-    marker.id = count;
-    marker.type = visualization_msgs::Marker::CUBE;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.lifetime = ros::Duration();
+void depth_estimater::LM_rviz_publish(const lm_detection::Position_array& LM_position_rviz){
+    for(int count = 1;count <= LM_position_rviz.position.size();count++){
+        visualization_msgs::Marker marker;
+        marker.header.frame_id = "map";
+        marker.header.stamp = ros::Time(0);
+        marker.ns = "LM_position";
+        marker.id = count;
+        marker.type = visualization_msgs::Marker::CUBE;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.lifetime = ros::Duration();
 
-    marker.scale.x = 0.1;
-    marker.scale.y = 0.1;
-    marker.scale.z = 0.1;
-    marker.pose.position.x = LM_position_rviz.x;
-    marker.pose.position.y = LM_position_rviz.y;
-    marker.pose.position.z = LM_position_rviz.z;
-    marker.pose.orientation.x = 0;
-    marker.pose.orientation.y = 0;
-    marker.pose.orientation.z = 0;
-    marker.pose.orientation.w = 1;
-    marker.color.r = 0.0f;
-    marker.color.g = 0.0f;
-    marker.color.b = 1.0f;
-    marker.color.a = 1.0f;
-    marker_pub.publish(marker);
+        marker.scale.x = 0.1;
+        marker.scale.y = 0.1;
+        marker.scale.z = 0.1;
+        marker.pose.position.x = LM_position_rviz.position[count-1].x;
+        marker.pose.position.y = LM_position_rviz.position[count-1].y;
+        marker.pose.position.z = LM_position_rviz.position[count-1].z;
+        marker.pose.orientation.x = 0;
+        marker.pose.orientation.y = 0;
+        marker.pose.orientation.z = 0;
+        marker.pose.orientation.w = 1;
+        marker.color.r = 0.0f;
+        marker.color.g = 0.0f;
+        marker.color.b = 1.0f;
+        marker.color.a = 1.0f;
+        marker_pub.publish(marker);
+    }
 }
 
 int main(int argc, char **argv){

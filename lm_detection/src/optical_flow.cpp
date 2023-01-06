@@ -43,7 +43,6 @@ void optical_flow::process(){
                 flag_first_frame = false;
                 prev_bbox = bbox_initial;
                 all_flow = cv::Mat::zeros(prev_image.size(), CV_32FC2);
-                std::cout << "Flag frist image" << std::endl;
             }else{
                 rgb_image->image.copyTo(next_image);
                 // 入力画像の準備
@@ -55,7 +54,7 @@ void optical_flow::process(){
                 cv::calcOpticalFlowFarneback(prev_gray_image, next_gray_image, flow, 0.8, 10, 15, 3, 5, 1.1, 0);
                 
                 // オプティカルフローの表示
-                 
+                std::cout << next_image.size() << std::endl;
                 cv::split(flow, flow_parts);
                 cv::cartToPolar(flow_parts[0], flow_parts[1], magnitude, angle, true);
                 cv::normalize(magnitude, magn_norm, 0.0f, 1.0f, cv::NORM_MINMAX);               
@@ -73,7 +72,6 @@ void optical_flow::process(){
                 // 次のバウンディングボックスを算出,publish
                 next_bbox = Next_Bounding_Box_output(prev_bbox,flow_parts);
                 bbox_pub.publish(next_bbox);
-                ROS_INFO("calcurate bounding box");
                 
                 std::swap(prev_image,next_image);
                 prev_bbox = next_bbox;
@@ -104,15 +102,19 @@ lm_detection::Bounding_Box_array optical_flow::Next_Bounding_Box_output(const lm
                 }
             }
         }
-        std::cout << bbox_flow_x << std::endl;
-        calc_next_bbox.bbox[count].xmin = int(prev_bbox.bbox[count].xmin + bbox_flow_x/num);
-        calc_next_bbox.bbox[count].ymin = int(prev_bbox.bbox[count].ymin + bbox_flow_y/num);
-        calc_next_bbox.bbox[count].xmax = int(prev_bbox.bbox[count].xmax + bbox_flow_x/num);
-        calc_next_bbox.bbox[count].ymax = int(prev_bbox.bbox[count].ymax + bbox_flow_y/num);
-        calc_next_bbox.bbox[count].id = prev_bbox.bbox[count].id;
+        if(num == 0){
+            calc_next_bbox.bbox[count] = prev_bbox.bbox[count];
+        }else{
+            calc_next_bbox.bbox[count].xmin = int(prev_bbox.bbox[count].xmin + bbox_flow_x/num);
+            calc_next_bbox.bbox[count].ymin = int(prev_bbox.bbox[count].ymin + bbox_flow_y/num);
+            calc_next_bbox.bbox[count].xmax = int(prev_bbox.bbox[count].xmax + bbox_flow_x/num);
+            calc_next_bbox.bbox[count].ymax = int(prev_bbox.bbox[count].ymax + bbox_flow_y/num);
+            calc_next_bbox.bbox[count].id = prev_bbox.bbox[count].id;
+        }
+        
         cv::rectangle(rgb_image->image,cv::Point(calc_next_bbox.bbox[count].xmin,calc_next_bbox.bbox[count].ymin),cv::Point(calc_next_bbox.bbox[count].xmax,calc_next_bbox.bbox[count].ymax ), cv::Scalar(0, 255, 0), 2, cv::LINE_AA);
-
     }
+    
     
     bbox_image_pub.publish(rgb_image->toImageMsg());
     return calc_next_bbox;

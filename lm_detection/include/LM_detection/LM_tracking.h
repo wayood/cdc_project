@@ -8,6 +8,7 @@
 #include <iostream>
 #include <string>
 #include <cv_bridge/cv_bridge.h>
+#include <visualization_msgs/Marker.h>
 #include <image_transport/image_transport.h>
 #include <image_geometry/pinhole_camera_model.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -26,21 +27,23 @@ class LM_tracking{
         void trackingcallback(const lm_detection::Bounding_Box_array&);
         void depthImageCallback(const sensor_msgs::ImageConstPtr&);
         void camera2worldframe(std::vector<int>&,std::string&);
-        void tf_broadcast_and_lookuptransform(cv::Point3d&,std::string&);
+        void tf_broadcast_and_lookuptransform(cv::Point3d&,std::string&,int);
+        void LM_rviz_publish(const lm_detection::Position_array&);
         std::vector<int> depth_estimate();
         lm_detection::Bounding_Box_array tracking_bounding_boxes;
-        lm_detection::Position_array LM_position_array;
+        lm_detection::Position_array LM_position_array,prev_LM_position_array;
         lm_detection::Position LM_position;
         cv_bridge::CvImagePtr cv_ptr_depth;
-        std::vector<int> sum_depth;
+        std::vector<int> sum_depth,prev_sum_depth;
         tf2_ros::TransformBroadcaster dynamic_br_;
         tf2_ros::Buffer tfBuffer;
         bool flag_track = false;
         image_geometry::PinholeCameraModel cam_model;
-
+        int count_id;
+        int bbox_number;
     private:
         ros::NodeHandle nh;
         ros::Subscriber sub_tracking_bbox,sub_depth;
         ros::Subscriber sub_camera_info;
-        ros::Publisher pub_LM_current;    
+        ros::Publisher pub_LM_current,marker_pub;    
 };

@@ -2,7 +2,7 @@
 <launch>
 
 <arg name="model" default="$(find cdc_navigation)/xacro/pf1.xacro"/>
-<arg name="rvizconfig" default="$(find cdc_navigation)/rviz/up04.rviz"/>
+<arg name="rvizconfig" default="$(find cdc_navigation)/rviz/up05.rviz"/>
 <!-- <arg name="rvizconfig" default="$(find urdf_tutorial)/rviz/urdf.rviz"/> -->
 
 
@@ -70,11 +70,13 @@
     <!--map-->
     <!-- <node pkg="map_server" name="map_server" type="map_server" args="$(find cdc_navigation)/map/cdc_base.yaml"/> -->
 
+  <!-- mapとbase_linkの接続 -->
   <node pkg="cdc_navigation" type="tf_to_pose_publisher.py" name="robot_pose_publisher">
     <param name="from_frame" type="string" value="map"/>
     <param name="to_frame" type="string" value="base_link"/>
   </node>
 
+  <!-- ダウンサンプリング -->
   <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" />
   <node pkg="nodelet" type="nodelet" name="voxel_grid" args="load pcl/VoxelGrid pcl_manager" >
     <remap from="~input" to="/camera/depth/color/points"/>
@@ -138,8 +140,8 @@
     </node> -->
 
     <node pkg="lm_detection" type="lm_detection" name="lm_detection" />
-    <node pkg="lm_detection" type="optical_flow" name="optical_flow" />
-    <node pkg="lm_detection" type="lm_tracking" name="lm_tracking" />
+    <node pkg="lm_detection" type="optical_flow" name="optical_flow"/>
+    <node pkg="lm_detection" type="lm_tracking" name="lm_tracking"/>
     <node pkg="middle_planner" type="compensation" name="compensation"/>
     <node pkg="cdc_navigation" type="navigation_controller" name="navigation_controller" />
 

@@ -37,7 +37,7 @@ public:
     void depthImageCallback(const sensor_msgs::ImageConstPtr& msg);
     void camera_info_callback(const sensor_msgs::ImageConstPtr& rgb_msg,const sensor_msgs::ImageConstPtr& depth_msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
     void main();
-    void LM_rviz_publish(const lm_detection::Position&,int);
+    void LM_rviz_publish(const lm_detection::Position_array&);
     void wp_callback(const waypoint_generator::Waypoint_array&);;
     cv::Point2d LM_position_raw_data;
     tf2_ros::TransformBroadcaster dynamic_br_;
@@ -57,6 +57,9 @@ public:
     bool wp_flag;
     ros::Publisher LM_pub;
     // tf::TransformListener listener;
+protected:
+    lm_detection::Position_array LM_position_rviz;
+
 private:
     ros::NodeHandle nh;
     ros::Subscriber sub_rgb, sub_depth,wp_init_sub_;

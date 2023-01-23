@@ -6,7 +6,7 @@ Navigation::Navigation(void)
     wp_init_sub_ = nh.subscribe("/waypoint",1,&Navigation::wp_callback,this);
     wp_new_sub_ = nh.subscribe("/waypoint_new",1,&Navigation::wp_new_callback,this);
     odom_sub_ = nh.subscribe("/odom",1,&Navigation::odom_callback,this);
-    goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("move_base_simple/goal", 1);
+    goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("next_goal", 1);
 }
 
 // ,wp_new_flag(false)
@@ -32,6 +32,7 @@ void Navigation::process(void)
     ros::Rate loop_rate(50);
     int count = 0;
     float Tolerence = 0.5;
+    double l = 10;
     ROS_INFO("==================================");
     ROS_INFO("|       Navigation start !!      |");
     ROS_INFO("==================================");
@@ -42,16 +43,19 @@ void Navigation::process(void)
             }
             if(wp_new_flag){
                 nextGoal(wp_new_array_subscribe,count);
+                l = sqrt(pow(wp_new_array_subscribe.wp[count].x - odom_subscribe->pose.pose.position.x,2) + pow(wp_new_array_subscribe.wp[count].y - odom_subscribe->pose.pose.position.y,2));
+            }else{
+                nextGoal(wp_array_subscribe,count);
+                l = sqrt(pow(wp_array_subscribe.wp[count].x - odom_subscribe->pose.pose.position.x,2) + pow(wp_array_subscribe.wp[count].y - odom_subscribe->pose.pose.position.y,2));
             }
-                
-            double l = sqrt(pow(wp_array_subscribe.wp[count].x - odom_subscribe->pose.pose.position.x,2) + pow(wp_array_subscribe.wp[count].y - odom_subscribe->pose.pose.position.y,2));
+            
             if (l < Tolerence){
                 count += 1;
-                if(wp_array_subscribe.wp.size() < count){
-                    ROS_INFO("Finish Operation");
+                if(wp_array_subscribe.wp.size() <= count){
+                    ROS_INFO("Finish Operation %d",wp_array_subscribe.wp.size());
                     break;
                 }
-                nextGoal(wp_new_array_subscribe,count);
+                // nextGoal(wp_new_array_subscribe,count);
                 ROS_INFO("Next Goal");
             }
             

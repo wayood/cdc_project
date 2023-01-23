@@ -68,9 +68,10 @@ std::vector<int> LM_tracking::depth_estimate(){
     return sum_depth;
 }
 
+
 void LM_tracking::camera2worldframe(std::vector<int>& sum_depth,std::string& LM_position_st){
     cv::Point2d LM_position_raw_data;
-    std::string LM_miss_current_position = "LM_miss_current_position_";
+    std::string LM_miss_current_position = "lm_miss_current_position_";
     LM_position_array.position = {};
     for(int i = 0;i < bbox_number;i++){
 
@@ -99,11 +100,43 @@ void LM_tracking::camera2worldframe(std::vector<int>& sum_depth,std::string& LM_
         }
             
     }
-    std::cout << "prev bbox array" << std::endl;
     prev_LM_position_array = LM_position_array;
-    std::cout << prev_LM_position_array << std::endl;
+    // std::cout << prev_LM_position_array << std::endl;
+    miss_lm_found(LM_position_array);
     pub_LM_current.publish(LM_position_array);
     
+}
+
+void LM_tracking::miss_lm_found(lm_detection::Position_array& miss_lm_position){
+    std::string str = "lm_miss_current_position_";
+    
+    for(int i = 0;i < miss_lm_position.position.size();i++){
+        
+        if(miss_lm_position.position[i].header.frame_id.find(str) != std::string::npos){
+            geometry_msgs::TransformStamped lookuptransformStamped;
+            tf2_ros::TransformListener tfListener(tfBuffer_miss);
+            try{
+                lookuptransformStamped = tfBuffer_miss.lookupTransform(cam_model.tfFrame(),miss_lm_position.position[i].header.frame_id,ros::Time(0),ros::Duration(3.0));
+            }
+            catch (tf2::TransformException &ex){
+                    ROS_WARN("miss LM found %s",ex.what());
+                    ros::Duration(1.0).sleep();
+                    return;
+            }
+            
+            cv::Point3d miss_point(lookuptransformStamped.transform.translation.x,lookuptransformStamped.transform.translation.y,lookuptransformStamped.transform.translation.z);
+            cv::Point2d miss_2dpoint = cam_model.project3dToPixel(miss_point);
+            cv::Point2d miss_un_2dpoint = cam_model.unrectifyPoint(miss_2dpoint);
+            if(miss_un_2dpoint.x < 1281 && miss_un_2dpoint.x > 0 && miss_un_2dpoint.y < 721 && miss_un_2dpoint.y > 0){
+                std::ostringstream st;
+                std::string lm_str = "lm_current_position_";
+                st << miss_lm_position.position[i].header.seq;
+                lm_str = lm_str + st.str();
+                miss_lm_position.position[i].header.frame_id = lm_str;
+            }
+            
+        }
+    }
 }
 
 void LM_tracking::tf_broadcast_and_lookuptransform(cv::Point3d& LM_position_3Ddata,std::string& LM_position_st,int count_id){
@@ -149,8 +182,8 @@ void LM_tracking::LM_rviz_publish(const lm_detection::Position_array& LM_positio
         visualization_msgs::Marker marker;
         marker.header.frame_id = "map";
         marker.header.stamp = ros::Time(0);
-        marker.ns = "LM_current_position";
-        marker.id = count;
+        marker.ns = LM_position_array.position[count-1].header.frame_id;
+        marker.id = LM_position_array.position[count-1].header.seq;
         marker.type = visualization_msgs::Marker::CUBE;
         marker.action = visualization_msgs::Marker::ADD;
         marker.lifetime = ros::Duration();

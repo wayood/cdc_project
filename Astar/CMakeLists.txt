@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
         geometry_msgs
         nav_msgs
         tf
+        waypoint_generator
         )
 
 catkin_package()
@@ -27,3 +28,7 @@ include_directories(
 ########### 编译可执行文件
 add_executable(${PROJECT_NAME} src/main.cpp src/Astar.cpp src/OccMapTransform.cpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
+add_executable(douglas_peucker src/douglas_peucker.cpp)
+target_link_libraries(douglas_peucker ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(douglas_peucker ${astar_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

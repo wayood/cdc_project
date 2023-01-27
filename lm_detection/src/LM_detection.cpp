@@ -7,6 +7,7 @@ depth_estimater::depth_estimater(){
     LM_pub = nh.advertise<lm_detection::Position_array>("detection/lm_first_position",1);
     marker_pub = nh.advertise<visualization_msgs::Marker>("detection/lm_position_marker", 1);
     bbox_pub = nh.advertise<lm_detection::Bounding_Box_array>("detection/bbox_array",1);
+    bbox_conti_pub = nh.advertise<lm_detection::Bounding_Box_array>("detection/bbox_continue_array",1);
 }
  
 depth_estimater::~depth_estimater(){
@@ -81,6 +82,7 @@ void depth_estimater::rgbImageCallback(const sensor_msgs::ImageConstPtr& msg){
         count += 1;
         cv::circle(overlay_image_1, LM_position_raw_data, dot_r, cv::Scalar(0, 0, 255), -1, cv::LINE_AA);
     }
+
     flag_bbox = true;
      
 }
@@ -131,7 +133,7 @@ void depth_estimater::depthImageCallback(const sensor_msgs::ImageConstPtr& msg){
 }
 
 void depth_estimater::main(){
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(200);
     message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh,"/saliency/image", 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh,"/camera/depth/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::CameraInfo> camera_info_sub(nh,"/camera/depth/camera_info",1);
@@ -140,7 +142,10 @@ void depth_estimater::main(){
     bool flag = true;
     LM_position_array.position = {};
     bbox_array.bbox = {};
+    
+
     while(false == ros::isShuttingDown()){
+        bbox_conti_array.bbox = {};
         if(flag_depth && flag_bbox && camera_info_flag && sum_depth.size() > 0 && wp_flag && flag && LM_point.size() > 2){
             tf2_ros::TransformListener tfListener(tfBuffer); 
             std::cout << LM_point.size() << LM_position_array.position.size() << std::endl;
@@ -199,19 +204,52 @@ void depth_estimater::main(){
                 bbox.ymax = int(BBox_rectangle[i][3]/1.5);
                 bbox.id = i;
                 bbox_array.bbox.push_back(bbox);
+
+                bbox_conti.xmin = int(BBox_rectangle[i][0]/2);
+                bbox_conti.ymin = int(BBox_rectangle[i][1]/1.5);
+                bbox_conti.xmax = int(BBox_rectangle[i][2]/2);
+                bbox_conti.ymax = int(BBox_rectangle[i][3]/1.5);
+                bbox_conti.id = i;
+                bbox_conti_array.bbox.push_back(bbox_conti);
+
                 i++;
                 flag = false;
             }
             LM_pub.publish(LM_position_array);
             bbox_pub.publish(bbox_array);
             LM_rviz_publish(LM_position_array);
-            
+            bbox_conti_pub.publish(bbox_conti_array);
         }
+
+        // if(flag_depth && flag_bbox && camera_info_flag && sum_depth.size() > 0 && wp_flag && LM_point.size() > 2){
+        //     for(int i = 0;i <LM_point.size();i++){
+        //         bbox_conti.xmin = int(BBox_rectangle[i][0]/2);
+        //         bbox_conti.ymin = int(BBox_rectangle[i][1]/1.5);
+        //         bbox_conti.xmax = int(BBox_rectangle[i][2]/2);
+        //         bbox_conti.ymax = int(BBox_rectangle[i][3]/1.5);
+        //         bbox_conti.id = i;
+        //         bbox_conti_array.bbox.push_back(bbox_conti);
+                
+        //     }
+        //     std::cout << "bbox continue publish!!" << std::endl;     
+        //     bbox_conti_pub.publish(bbox_conti_array);
+        // }
 
         if(flag == false && flag_bbox){
             LM_pub.publish(LM_position_array);
             bbox_pub.publish(bbox_array);
             LM_rviz_publish(LM_position_array);
+            for(int i = 0;i <BBox_rectangle.size();i++){
+                bbox_conti.xmin = int(BBox_rectangle[i][0]/2);
+                bbox_conti.ymin = int(BBox_rectangle[i][1]/1.5);
+                bbox_conti.xmax = int(BBox_rectangle[i][2]/2);
+                bbox_conti.ymax = int(BBox_rectangle[i][3]/1.5);
+                bbox_conti.id = i;
+                bbox_conti_array.bbox.push_back(bbox_conti);
+                
+            }
+            std::cout << "bbox continue publish!!" << BBox_rectangle.size() << std::endl;     
+            bbox_conti_pub.publish(bbox_conti_array);
         }
 
         ros::spinOnce();

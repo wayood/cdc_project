@@ -46,8 +46,8 @@ public:
     std::vector<std::vector <int>> BBox_rectangle;
     lm_detection::Position_array LM_position_array;
     lm_detection::Position LM_position;
-    lm_detection::Bounding_Box bbox;
-    lm_detection::Bounding_Box_array bbox_array;
+    lm_detection::Bounding_Box bbox,bbox_conti;
+    lm_detection::Bounding_Box_array bbox_array,bbox_conti_array;
     cv_bridge::CvImagePtr cv_ptr_depth;
     image_geometry::PinholeCameraModel cam_model;
     std::vector<int> sum_depth;
@@ -63,6 +63,6 @@ protected:
 private:
     ros::NodeHandle nh;
     ros::Subscriber sub_rgb, sub_depth,wp_init_sub_;
-    ros::Publisher marker_pub,bbox_pub;
+    ros::Publisher marker_pub,bbox_pub,bbox_conti_pub;
     
 };

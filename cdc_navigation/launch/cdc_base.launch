@@ -146,7 +146,7 @@
         <param name="camera_pitch"  value="0.00" />
     </node> -->
 
-    <node pkg="lm_detection" type="lm_detection" name="lm_detection" />
+    <node pkg="lm_detection" type="lm_detection" name="lm_detection"/>
     <node pkg="lm_detection" type="optical_flow" name="optical_flow"/>
     <node pkg="lm_detection" type="lm_tracking" name="lm_tracking"/>
     <node pkg="middle_planner" type="compensation" name="compensation"/>

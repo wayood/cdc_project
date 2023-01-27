@@ -563,6 +563,7 @@
     </joint>
     <actuator name="frame3_fl_to_gear_fl_motor">
       <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
 
@@ -646,6 +647,7 @@
     </joint>
     <actuator name="wheel_fl_motor">
       <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
     </actuator>
   </transmission>
 

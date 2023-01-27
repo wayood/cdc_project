@@ -18,19 +18,22 @@ public:
     void rgbImageCallback(const sensor_msgs::ImageConstPtr&);
     void BboxCallback(const lm_detection::Bounding_Box_array&);
     lm_detection::Bounding_Box_array Next_Bounding_Box_output(const lm_detection::Bounding_Box_array&,cv::Mat[2]);
+    float IoU(const lm_detection::Bounding_Box& calc_bbox,const lm_detection::Bounding_Box& detecte_bbox);
+    void Bbox_continue_Callback(const lm_detection::Bounding_Box_array&);
 protected:
     ros::NodeHandle nh;
-    ros::Subscriber rgb_sub,bbox_sub;
+    ros::Subscriber rgb_sub,bbox_sub,bbox_continue_sub;
     ros::Publisher bbox_pub;
     image_transport::ImageTransport it;
     image_transport::Publisher flow_pub_image,bbox_image_pub;
     bool flag_first_frame;
     bool subscribe_rgbimage = false;
     bool subscribe_bbox = false;
+    float iou;
     std::vector<float> error;
     std::vector<std::vector <int>> lm_prev_centerpoint,lm_next_centerpoint;
     cv_bridge::CvImagePtr rgb_image;
-    lm_detection::Bounding_Box_array bbox_initial,prev_bbox,next_bbox;
+    lm_detection::Bounding_Box_array bbox_initial,prev_bbox,next_bbox,bbox_continue;
     cv::Mat prev_image,prev_gray_image,next_image,next_gray_image,flow;
     cv::Mat magnitude, angle, magn_norm, flow_x, flow_y, all_flow;
     cv::Mat flow_parts[2],_hsv[3], flow_[2],hsv, hsv8, bgr;

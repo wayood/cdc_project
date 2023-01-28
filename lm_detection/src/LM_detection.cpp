@@ -7,6 +7,7 @@ depth_estimater::depth_estimater(){
     LM_pub = nh.advertise<lm_detection::Position_array>("detection/lm_first_position",1);
     marker_pub = nh.advertise<visualization_msgs::Marker>("detection/lm_position_marker", 1);
     bbox_pub = nh.advertise<lm_detection::Bounding_Box_array>("detection/bbox_array",1);
+    bbox_conti_pub = nh.advertise<lm_detection::Bounding_Box_array>("detection/bbox_continue_array",1);
 }
  
 depth_estimater::~depth_estimater(){
@@ -81,6 +82,7 @@ void depth_estimater::rgbImageCallback(const sensor_msgs::ImageConstPtr& msg){
         count += 1;
         cv::circle(overlay_image_1, LM_position_raw_data, dot_r, cv::Scalar(0, 0, 255), -1, cv::LINE_AA);
     }
+
     flag_bbox = true;
      
 }
@@ -131,7 +133,7 @@ void depth_estimater::depthImageCallback(const sensor_msgs::ImageConstPtr& msg){
 }
 
 void depth_estimater::main(){
-    ros::Rate loop_rate(50);
+    ros::Rate loop_rate(200);
     message_filters::Subscriber<sensor_msgs::Image> rgb_sub(nh,"/saliency/image", 1);
     message_filters::Subscriber<sensor_msgs::Image> depth_sub(nh,"/camera/depth/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::CameraInfo> camera_info_sub(nh,"/camera/depth/camera_info",1);
@@ -140,7 +142,10 @@ void depth_estimater::main(){
     bool flag = true;
     LM_position_array.position = {};
     bbox_array.bbox = {};
+    
+
     while(false == ros::isShuttingDown()){
+        bbox_conti_array.bbox = {};
         if(flag_depth && flag_bbox && camera_info_flag && sum_depth.size() > 0 && wp_flag && flag && LM_point.size() > 2){
             tf2_ros::TransformListener tfListener(tfBuffer); 
             std::cout << LM_point.size() << LM_position_array.position.size() << std::endl;
@@ -190,7 +195,7 @@ void depth_estimater::main(){
                 LM_position.x = trans.x;
                 LM_position.y = trans.y;
                 LM_position.z = trans.z;
-                LM_rviz_publish(LM_position,i);
+                
                 LM_position_array.position.push_back(LM_position);
 
                 bbox.xmin = int(BBox_rectangle[i][0]/2);
@@ -199,17 +204,52 @@ void depth_estimater::main(){
                 bbox.ymax = int(BBox_rectangle[i][3]/1.5);
                 bbox.id = i;
                 bbox_array.bbox.push_back(bbox);
+
+                bbox_conti.xmin = int(BBox_rectangle[i][0]/2);
+                bbox_conti.ymin = int(BBox_rectangle[i][1]/1.5);
+                bbox_conti.xmax = int(BBox_rectangle[i][2]/2);
+                bbox_conti.ymax = int(BBox_rectangle[i][3]/1.5);
+                bbox_conti.id = i;
+                bbox_conti_array.bbox.push_back(bbox_conti);
+
                 i++;
                 flag = false;
             }
             LM_pub.publish(LM_position_array);
             bbox_pub.publish(bbox_array);
-            
+            LM_rviz_publish(LM_position_array);
+            bbox_conti_pub.publish(bbox_conti_array);
         }
+
+        // if(flag_depth && flag_bbox && camera_info_flag && sum_depth.size() > 0 && wp_flag && LM_point.size() > 2){
+        //     for(int i = 0;i <LM_point.size();i++){
+        //         bbox_conti.xmin = int(BBox_rectangle[i][0]/2);
+        //         bbox_conti.ymin = int(BBox_rectangle[i][1]/1.5);
+        //         bbox_conti.xmax = int(BBox_rectangle[i][2]/2);
+        //         bbox_conti.ymax = int(BBox_rectangle[i][3]/1.5);
+        //         bbox_conti.id = i;
+        //         bbox_conti_array.bbox.push_back(bbox_conti);
+                
+        //     }
+        //     std::cout << "bbox continue publish!!" << std::endl;     
+        //     bbox_conti_pub.publish(bbox_conti_array);
+        // }
 
         if(flag == false && flag_bbox){
             LM_pub.publish(LM_position_array);
             bbox_pub.publish(bbox_array);
+            LM_rviz_publish(LM_position_array);
+            for(int i = 0;i <BBox_rectangle.size();i++){
+                bbox_conti.xmin = int(BBox_rectangle[i][0]/2);
+                bbox_conti.ymin = int(BBox_rectangle[i][1]/1.5);
+                bbox_conti.xmax = int(BBox_rectangle[i][2]/2);
+                bbox_conti.ymax = int(BBox_rectangle[i][3]/1.5);
+                bbox_conti.id = i;
+                bbox_conti_array.bbox.push_back(bbox_conti);
+                
+            }
+            std::cout << "bbox continue publish!!" << BBox_rectangle.size() << std::endl;     
+            bbox_conti_pub.publish(bbox_conti_array);
         }
 
         ros::spinOnce();
@@ -218,31 +258,33 @@ void depth_estimater::main(){
 
 }
 
-void depth_estimater::LM_rviz_publish(const lm_detection::Position& LM_position_rviz,int count){
-    visualization_msgs::Marker marker;
-    marker.header.frame_id = "map";
-    marker.header.stamp = ros::Time(0);
-    marker.ns = "LM_position";
-    marker.id = count;
-    marker.type = visualization_msgs::Marker::CUBE;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.lifetime = ros::Duration();
+void depth_estimater::LM_rviz_publish(const lm_detection::Position_array& LM_position_rviz){
+    for(int count = 1;count <= LM_position_rviz.position.size();count++){
+        visualization_msgs::Marker marker;
+        marker.header.frame_id = "map";
+        marker.header.stamp = ros::Time(0);
+        marker.ns = "LM_position";
+        marker.id = count;
+        marker.type = visualization_msgs::Marker::CUBE;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.lifetime = ros::Duration();
 
-    marker.scale.x = 0.1;
-    marker.scale.y = 0.1;
-    marker.scale.z = 0.1;
-    marker.pose.position.x = LM_position_rviz.x;
-    marker.pose.position.y = LM_position_rviz.y;
-    marker.pose.position.z = LM_position_rviz.z;
-    marker.pose.orientation.x = 0;
-    marker.pose.orientation.y = 0;
-    marker.pose.orientation.z = 0;
-    marker.pose.orientation.w = 1;
-    marker.color.r = 0.0f;
-    marker.color.g = 0.0f;
-    marker.color.b = 1.0f;
-    marker.color.a = 1.0f;
-    marker_pub.publish(marker);
+        marker.scale.x = 0.1;
+        marker.scale.y = 0.1;
+        marker.scale.z = 0.1;
+        marker.pose.position.x = LM_position_rviz.position[count-1].x;
+        marker.pose.position.y = LM_position_rviz.position[count-1].y;
+        marker.pose.position.z = LM_position_rviz.position[count-1].z;
+        marker.pose.orientation.x = 0;
+        marker.pose.orientation.y = 0;
+        marker.pose.orientation.z = 0;
+        marker.pose.orientation.w = 1;
+        marker.color.r = 0.0f;
+        marker.color.g = 0.0f;
+        marker.color.b = 1.0f;
+        marker.color.a = 1.0f;
+        marker_pub.publish(marker);
+    }
 }
 
 int main(int argc, char **argv){

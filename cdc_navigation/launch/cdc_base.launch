@@ -1,10 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-
 <arg name="model" default="$(find cdc_navigation)/xacro/pf1.xacro"/>
-<arg name="rvizconfig" default="$(find cdc_navigation)/rviz/up04.rviz"/>
+<arg name="rvizconfig" default="$(find cdc_navigation)/rviz/up05.rviz"/>
 <!-- <arg name="rvizconfig" default="$(find urdf_tutorial)/rviz/urdf.rviz"/> -->
-
 
 <arg name="enable_odom_tf" default="false"/>
 <arg name="init_pose" default=""/>
@@ -19,7 +17,6 @@
 
 <!-- Launch gazebo -->
 <include file="$(find gazebo_ros)/launch/empty_world.launch">
-  <!-- <arg name="world_name" value="$(find cdc_navigation)/worlds/clearpath_playpen.world"/> -->
   <arg name="world_name" value="$(find cdc_navigation)/worlds/cdc_base.world"/>
   <arg name="debug" value="false" />
   <arg name="gui" value="true" />
@@ -70,11 +67,13 @@
     <!--map-->
     <!-- <node pkg="map_server" name="map_server" type="map_server" args="$(find cdc_navigation)/map/cdc_base.yaml"/> -->
 
+  <!-- mapとbase_linkの接続 -->
   <node pkg="cdc_navigation" type="tf_to_pose_publisher.py" name="robot_pose_publisher">
     <param name="from_frame" type="string" value="map"/>
     <param name="to_frame" type="string" value="base_link"/>
   </node>
 
+  <!-- ダウンサンプリング -->
   <node pkg="nodelet" type="nodelet" name="pcl_manager" args="manager" />
   <node pkg="nodelet" type="nodelet" name="voxel_grid" args="load pcl/VoxelGrid pcl_manager" >
     <remap from="~input" to="/camera/depth/color/points"/>
@@ -94,6 +93,11 @@
     <rosparam command="load" file="$(find elevation_mapping)/config/sensor_processors/postprocessor_pipeline.yaml"/>
   </node>
 
+  <node pkg="grid_map_visualization" type="grid_map_visualization" name="elevation_map_fused_visualization">
+   	<param name="grid_map_topic" value="/elevation_mapping/elevation_map" />
+    <rosparam command="load" file="$(find elevation_mapping_demos)/config/visualization/fused.yaml" />
+  </node>
+
 <!-- feture object detection -->
     <node name="saliencymapVOCUS2" pkg="visual_saliency" type="saliencyDetectionVOCUS2">
 		  <remap from="/rgbimage_in" to="/camera/color/image_raw" />
@@ -106,13 +110,18 @@
     </node>
 
     <!-- global plan-->
-    <!-- <node pkg="astar" type="astar" name="astar" output="screen" respawn="false">
-        <param name="Euclidean" value="true"/>
-        <param name="OccupyThresh" value="-1"/>
-        <param name="InflateRadius" value="0.25"/>
-        <param name="rate" value="50"/>
-    </node> -->
+    <node pkg="astar" type="astar" name="astar" output="screen">
+      <!-- <remap from="initialpose" to="/base_link_pose"/> -->
+      <remap from="map" to="/elevation_map_fused_visualization/elevation_grid"/>
+      <param name="Euclidean" value="true"/>
+      <param name="OccupyThresh" value="-1"/>
+      <param name="InflateRadius" value="0.05"/>
+      <param name="rate" value="50"/>
+    </node>
 
+  <node pkg="astar" type="douglas_peucker" name="douglas_peucker">
+    <remap from="waypoint_" to="waypoint" />
+  </node>
     <!--local plan-->
     <arg name="hz" default="5"/>
     <arg name="use_scan_as_input" default="true"/>
@@ -125,7 +134,7 @@
         <param name="HZ" value="$(arg hz)"/>
         <param name="USE_SCAN_AS_INPUT" value="$(arg use_scan_as_input)"/>
         <remap from="/scan" to="scan"/> 
-        <remap from="/local_goal" to="move_base_simple/goal"/>
+        <remap from="/local_goal" to="next_goal"/>
         <remap from="/cmd_vel" to="ackermann_steering_controller/cmd_vel"/>
         <remap from="/odom" to="ackermann_steering_controller/odom"/>
     </node>
@@ -137,11 +146,11 @@
         <param name="camera_pitch"  value="0.00" />
     </node> -->
 
-    <node pkg="lm_detection" type="lm_detection" name="lm_detection" />
-    <node pkg="lm_detection" type="optical_flow" name="optical_flow" />
-    <node pkg="lm_detection" type="lm_tracking" name="lm_tracking" />
+    <node pkg="lm_detection" type="lm_detection" name="lm_detection"/>
+    <node pkg="lm_detection" type="optical_flow" name="optical_flow"/>
+    <node pkg="lm_detection" type="lm_tracking" name="lm_tracking"/>
     <node pkg="middle_planner" type="compensation" name="compensation"/>
-    <node pkg="cdc_navigation" type="navigation_controller" name="navigation_controller" />
+    <node pkg="cdc_navigation" type="navigation_controller" name="navigation_controller" output="screen" />
 
 <arg name="paused" default="false"/>
 <arg name="use_sim_time" default="true"/>

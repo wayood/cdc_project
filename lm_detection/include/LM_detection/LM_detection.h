@@ -37,7 +37,7 @@ public:
     void depthImageCallback(const sensor_msgs::ImageConstPtr& msg);
     void camera_info_callback(const sensor_msgs::ImageConstPtr& rgb_msg,const sensor_msgs::ImageConstPtr& depth_msg,const sensor_msgs::CameraInfoConstPtr& cam_info);
     void main();
-    void LM_rviz_publish(const lm_detection::Position&,int);
+    void LM_rviz_publish(const lm_detection::Position_array&);
     void wp_callback(const waypoint_generator::Waypoint_array&);;
     cv::Point2d LM_position_raw_data;
     tf2_ros::TransformBroadcaster dynamic_br_;
@@ -46,8 +46,8 @@ public:
     std::vector<std::vector <int>> BBox_rectangle;
     lm_detection::Position_array LM_position_array;
     lm_detection::Position LM_position;
-    lm_detection::Bounding_Box bbox;
-    lm_detection::Bounding_Box_array bbox_array;
+    lm_detection::Bounding_Box bbox,bbox_conti;
+    lm_detection::Bounding_Box_array bbox_array,bbox_conti_array;
     cv_bridge::CvImagePtr cv_ptr_depth;
     image_geometry::PinholeCameraModel cam_model;
     std::vector<int> sum_depth;
@@ -57,9 +57,12 @@ public:
     bool wp_flag;
     ros::Publisher LM_pub;
     // tf::TransformListener listener;
+protected:
+    lm_detection::Position_array LM_position_rviz;
+
 private:
     ros::NodeHandle nh;
     ros::Subscriber sub_rgb, sub_depth,wp_init_sub_;
-    ros::Publisher marker_pub,bbox_pub;
+    ros::Publisher marker_pub,bbox_pub,bbox_conti_pub;
     
 };

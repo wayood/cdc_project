@@ -6,6 +6,7 @@ LM_tracking::LM_tracking()
     sub_tracking_bbox = nh.subscribe("tracking/flow_bbox", 1,&LM_tracking::trackingcallback,this);
     sub_depth = nh.subscribe<sensor_msgs::Image>("/camera/depth/image_raw", 5, &LM_tracking::depthImageCallback, this);
     pub_LM_current = nh.advertise<lm_detection::Position_array>("tracking/lm_position_current",1);
+    marker_pub = nh.advertise<visualization_msgs::Marker>("tracking/lm_current_position_marker", 1);
 }
 
 LM_tracking::~LM_tracking(){
@@ -19,9 +20,10 @@ void LM_tracking::Camera_callback(const sensor_msgs::CameraInfoConstPtr& cam_inf
 
 void LM_tracking::trackingcallback(const lm_detection::Bounding_Box_array& msg){
     tracking_bounding_boxes = msg;
-    if(!tracking_bounding_boxes.bbox.empty()){
+    if(tracking_bounding_boxes.bbox.size() > 2){
         flag_track = true;
-        std::cout << "get tracking bbox !!" << std::endl;
+        std::cout << "get tracking bbox !!" << tracking_bounding_boxes.bbox.size() << std::endl;
+        bbox_number = tracking_bounding_boxes.bbox.size();
     }
 }
 
@@ -66,28 +68,78 @@ std::vector<int> LM_tracking::depth_estimate(){
     return sum_depth;
 }
 
+
 void LM_tracking::camera2worldframe(std::vector<int>& sum_depth,std::string& LM_position_st){
     cv::Point2d LM_position_raw_data;
+    std::string LM_miss_current_position = "lm_miss_current_position_";
     LM_position_array.position = {};
-    for(int i = 0;i < sum_depth.size();i++){
-        std::ostringstream st;
-        st << tracking_bounding_boxes.bbox[i].id ;
-        LM_position_st = LM_position_st + st.str();
+    for(int i = 0;i < bbox_number;i++){
+
         LM_position_raw_data.x = int((tracking_bounding_boxes.bbox[i].xmin*0.5 + tracking_bounding_boxes.bbox[i].xmax*0.5)*2);
         LM_position_raw_data.y = int((tracking_bounding_boxes.bbox[i].ymin*0.5 + tracking_bounding_boxes.bbox[i].ymax*0.5)*1.5);
         cv::Point2d LM_position_correction_data = cam_model.rectifyPoint(LM_position_raw_data);
         cv::Point3d LM_position_3Ddata = cam_model.projectPixelTo3dRay(LM_position_correction_data);
-        LM_position_3Ddata.x = LM_position_3Ddata.x*0.001*sum_depth[i];
-        LM_position_3Ddata.y = LM_position_3Ddata.y*0.001*sum_depth[i];
-        LM_position_3Ddata.z = LM_position_3Ddata.z*0.001*sum_depth[i];
-        tf_broadcast_and_lookuptransform(LM_position_3Ddata,LM_position_st);
+
+        if(tracking_bounding_boxes.bbox[i].xmin > 640 || tracking_bounding_boxes.bbox[i].xmax < 0 || tracking_bounding_boxes.bbox[i].ymin > 480 || tracking_bounding_boxes.bbox[i].ymax < 0){
+
+            std::ostringstream st;
+            st << tracking_bounding_boxes.bbox[i].id;
+            LM_position_st = LM_miss_current_position + st.str();
+            prev_LM_position_array.position[i].header.frame_id = LM_position_st;
+            LM_position_array.position.push_back(prev_LM_position_array.position[i]);
+        }else{
+
+            std::ostringstream st;
+            st << tracking_bounding_boxes.bbox[i].id;
+            LM_position_st = LM_position_st + st.str();
+            LM_position_3Ddata.x = LM_position_3Ddata.x*0.001*sum_depth[i];
+            LM_position_3Ddata.y = LM_position_3Ddata.y*0.001*sum_depth[i];
+            LM_position_3Ddata.z = LM_position_3Ddata.z*0.001*sum_depth[i];
+            tf_broadcast_and_lookuptransform(LM_position_3Ddata,LM_position_st,tracking_bounding_boxes.bbox[i].id);
+
+        }
+            
     }
-    
+    prev_LM_position_array = LM_position_array;
+    // std::cout << prev_LM_position_array << std::endl;
+    miss_lm_found(LM_position_array);
     pub_LM_current.publish(LM_position_array);
     
 }
 
-void LM_tracking::tf_broadcast_and_lookuptransform(cv::Point3d& LM_position_3Ddata,std::string& LM_position_st){
+void LM_tracking::miss_lm_found(lm_detection::Position_array& miss_lm_position){
+    std::string str = "lm_miss_current_position_";
+    
+    for(int i = 0;i < miss_lm_position.position.size();i++){
+        
+        if(miss_lm_position.position[i].header.frame_id.find(str) != std::string::npos){
+            geometry_msgs::TransformStamped lookuptransformStamped;
+            tf2_ros::TransformListener tfListener(tfBuffer_miss);
+            try{
+                lookuptransformStamped = tfBuffer_miss.lookupTransform(cam_model.tfFrame(),miss_lm_position.position[i].header.frame_id,ros::Time(0),ros::Duration(3.0));
+            }
+            catch (tf2::TransformException &ex){
+                    ROS_WARN("miss LM found %s",ex.what());
+                    ros::Duration(1.0).sleep();
+                    return;
+            }
+            
+            cv::Point3d miss_point(lookuptransformStamped.transform.translation.x,lookuptransformStamped.transform.translation.y,lookuptransformStamped.transform.translation.z);
+            cv::Point2d miss_2dpoint = cam_model.project3dToPixel(miss_point);
+            cv::Point2d miss_un_2dpoint = cam_model.unrectifyPoint(miss_2dpoint);
+            if(miss_un_2dpoint.x < 1281 && miss_un_2dpoint.x > 0 && miss_un_2dpoint.y < 721 && miss_un_2dpoint.y > 0){
+                std::ostringstream st;
+                std::string lm_str = "lm_current_position_";
+                st << miss_lm_position.position[i].header.seq;
+                lm_str = lm_str + st.str();
+                miss_lm_position.position[i].header.frame_id = lm_str;
+            }
+            
+        }
+    }
+}
+
+void LM_tracking::tf_broadcast_and_lookuptransform(cv::Point3d& LM_position_3Ddata,std::string& LM_position_st,int count_id){
     
     tf2_ros::TransformListener tfListener(tfBuffer);
     geometry_msgs::TransformStamped transformStamped;
@@ -117,6 +169,7 @@ void LM_tracking::tf_broadcast_and_lookuptransform(cv::Point3d& LM_position_3Dda
 
     auto& trans = lookuptransformStamped.transform.translation;
     LM_position.header.frame_id = LM_position_st;
+    LM_position.header.seq = count_id;
     LM_position.header.stamp = ros::Time(0);
     LM_position.x = trans.x;
     LM_position.y = trans.y;
@@ -124,17 +177,49 @@ void LM_tracking::tf_broadcast_and_lookuptransform(cv::Point3d& LM_position_3Dda
     LM_position_array.position.push_back(LM_position);
 }
 
+void LM_tracking::LM_rviz_publish(const lm_detection::Position_array& LM_position_array){
+    for(int count = 1;count <= LM_position_array.position.size();count++){
+        visualization_msgs::Marker marker;
+        marker.header.frame_id = "map";
+        marker.header.stamp = ros::Time(0);
+        marker.ns = LM_position_array.position[count-1].header.frame_id;
+        marker.id = LM_position_array.position[count-1].header.seq;
+        marker.type = visualization_msgs::Marker::CUBE;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.lifetime = ros::Duration();
+
+        marker.scale.x = 0.1;
+        marker.scale.y = 0.1;
+        marker.scale.z = 0.1;
+        marker.pose.position.x = LM_position_array.position[count-1].x;
+        marker.pose.position.y = LM_position_array.position[count-1].y;
+        marker.pose.position.z = LM_position_array.position[count-1].z;
+        marker.pose.orientation.x = 0;
+        marker.pose.orientation.y = 0;
+        marker.pose.orientation.z = 0;
+        marker.pose.orientation.w = 1;
+        marker.color.r = 1.0f;
+        marker.color.g = 0.0f;
+        marker.color.b = 0.0f;
+        marker.color.a = 1.0f;
+        marker_pub.publish(marker);
+    }
+}
+
+
 void LM_tracking::process(){
     ros::Rate loop_rate(100);
-    int count = 0;
-    bool flag = false;
+    bool flag = true;
+    prev_LM_position_array.position = {};
     while(false == ros::isShuttingDown()){
         if(flag_track){
+            if(flag){
+                prev_LM_position_array.position.resize(bbox_number);
+            }
             sum_depth = depth_estimate();
-            ROS_INFO("depth get !!");
             std::string lm_string_name = "lm_current_position_";          
             camera2worldframe(sum_depth,lm_string_name);     
-            ROS_INFO("publish msg !!");
+            LM_rviz_publish(LM_position_array);
         }
         ros::spinOnce();
         loop_rate.sleep();

@@ -1,0 +1,41 @@
+@startuml
+start
+group waypoint_generator/waypoint_generate
+:Waypoint generate;
+end group
+group visual_saliency_ros/saliencyDetectionVOCUS2
+:Saliency Map;
+end group
+group lm_detection/LM_detection
+:camera2world(深度計算及び座標変換);
+end group
+while (ゴール到着した？)
+-> no;
+if(LM個数が3以上？) then (yes)
+fork
+
+group lm_detection/optical_flow
+    :Optical flow;
+    :IoU;
+end group
+
+group lm_detection/LM_tracking
+    :world2camera;
+end group
+
+fork again
+group middle_planner/middle_plan
+    :CDC;
+end group
+
+end fork
+else (no)
+endif
+group dwa_planner/dwa_planner
+    :DWA;
+end group
+
+endwhile
+stop
+
+@enduml
